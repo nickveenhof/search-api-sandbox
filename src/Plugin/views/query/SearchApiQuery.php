@@ -13,6 +13,7 @@ use Drupal\search_api\Query\FilterInterface;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\query\QueryPluginBase;
+use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
 
 /**
@@ -342,11 +343,11 @@ class SearchApiQuery extends QueryPluginBase {
 
       // Store the results.
       if (!$skip_result_count) {
-        $this->pager->total_items = $view->total_rows = $results['result count'];
+        $view->pager->total_items = $view->total_rows = $results['result count'];
         if (!empty($this->pager->options['offset'])) {
           $this->pager->total_items -= $this->pager->options['offset'];
         }
-        $this->pager->updatePageInfo();
+        $view->pager->updatePageInfo();
       }
       $view->result = array();
       if (!empty($results['results'])) {
@@ -357,7 +358,7 @@ class SearchApiQuery extends QueryPluginBase {
       $view->execute_time = microtime(TRUE) - $start;
 
       // Trigger pager postExecute().
-      $this->pager->postExecute($view->result);
+      $view->pager->postExecute($view->result);
     }
     catch (\Exception $e) {
       $this->errors[] = $e->getMessage();
@@ -400,15 +401,15 @@ class SearchApiQuery extends QueryPluginBase {
           continue;
         }
       }
-      $row = array();
+
 
       // Include the loaded item for this result row, if present, or the item
       // ID.
-      if (!empty($result['entity'])) {
-        $row['entity'] = $result['entity'];
+      if (!empty($result['_entity'])) {
+        $row['_entity'] = $result['_entity'];
       }
       else {
-        $row['entity'] = $id;
+        $row['_entity'] = $id;
       }
 
       $row['_entity_properties']['search_api_relevance'] = $result['score'];
@@ -423,8 +424,8 @@ class SearchApiQuery extends QueryPluginBase {
       $missing_fields = array_diff_key($this->fields, $row);
       if ($missing_fields) {
         $missing[$id] = $missing_fields;
-        if (is_object($row['entity'])) {
-          $items[$id] = $row['entity'];
+        if (is_object($row['_entity'])) {
+          $items[$id] = $row['_entity'];
         }
         else {
           $ids[] = $id;
@@ -432,19 +433,21 @@ class SearchApiQuery extends QueryPluginBase {
       }
 
       // Save the row values for adding them to the Views result afterwards.
-      $rows[$id] = (object) $row;
+      $rows[$id] = new ResultRow($row);
     }
 
     // Load items of those rows which haven't got all field values, yet.
     if (!empty($ids)) {
-      $items += $this->index->loadItems($ids);
+      $datasource = $this->index->getDatasources();
+      $datasource = reset($datasource);
+      $items += $datasource->loadMultiple($ids);
       // $items now includes loaded items, and those already passed in the
       // search results.
       foreach ($items as $id => $item) {
         // Extract item properties.
-        $wrapper = $this->index->entityWrapper($item, FALSE);
-        $rows[$id]->_entity_properties += $this->extractFields($wrapper, $missing[$id]);
-        $rows[$id]->entity = $item;
+        //$wrapper = $this->index->entityWrapper($item, FALSE);
+        //$rows[$id]->_entity_properties += $this->extractFields($wrapper, $missing[$id]);
+        $rows[$id]->_entity = $item;
       }
     }
 

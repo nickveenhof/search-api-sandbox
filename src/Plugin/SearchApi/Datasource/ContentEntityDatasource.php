@@ -111,7 +111,7 @@ class ContentEntityDatasource extends DatasourcePluginBase implements ContainerF
     // If we were unable to delete some of the items, mark them as deleted.
     if ($diff = array_diff_key(array_flip($ids), $items)) {
       // Remove the items from the index.
-      $this->getIndex()->trackItemsDeleted($this, array_keys($diff));
+      $this->getIndex()->trackItemsDeleted($this->getPluginId(), array_keys($diff));
     }
     return $items;
   }
