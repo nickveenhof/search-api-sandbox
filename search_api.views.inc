@@ -8,15 +8,15 @@
 /**
  * Implements hook_views_data().
  */
-function search_api_views_views_data() {
+function search_api_views_data() {
   try {
     $data = array();
-    $entity_types = entity_get_info();
-    foreach (search_api_index_load_multiple(FALSE) as $index) {
+    $entity_types = \Drupal::entityManager()->getDefinitions();
+    foreach (entity_load_multiple('search_api_index') as $index) {
       // Fill in base data.
-      $key = 'search_api_index_' . $index->machine_name;
+      $key = 'search_api_index_' . $index->id();
       $table = &$data[$key];
-      $type_info = search_api_get_item_type_info($index->item_type);
+      $type_info = Drupal\search_api\Utility\Utility::getDataTypeInfo($index->item_type);
       $table['table']['group'] = t('Indexed @entity_type', array('@entity_type' => $type_info['name']));
       $table['table']['base'] = array(
         'field' => 'search_api_id',
@@ -249,47 +249,13 @@ function _search_api_views_add_handlers($id, array $field, EntityMetadataWrapper
 }
 
 /**
- * Implements hook_views_plugins().
+ * Implements hook_views_plugins_cache_alter().
  */
-function search_api_views_views_plugins() {
+function search_api_views_plugins_cache_alter(array &$plugins) {
   // Collect all base tables provided by this module.
   $bases = array();
-  foreach (search_api_index_load_multiple(FALSE) as $index) {
-    $bases[] = 'search_api_index_' . $index->machine_name;
+  foreach (entity_load_multiple('search_api_index') as $index) {
+    $bases[] = 'search_api_index_' . $index->id();
   }
-
-  $ret = array(
-    'query' => array(
-      'search_api_views_query' => array(
-        'title' => t('Search API Query'),
-        'help' => t('Query will be generated and run using the Search API.'),
-        'handler' => 'SearchApiViewsQuery',
-      ),
-    ),
-    'cache' => array(
-      'search_api_views_cache' => array(
-        'title' => t('Search-specific'),
-        'help' => t("Cache Search API views. (Other methods probably won't work with search views.)"),
-        'base' => $bases,
-        'handler' => 'SearchApiViewsCache',
-        'uses options' => TRUE,
-      ),
-    ),
-  );
-
-  if (module_exists('search_api_facetapi')) {
-    $ret['display']['search_api_views_facets_block'] = array(
-      'title' => t('Facets block'),
-      'help' => t('Display facets for this search as a block anywhere on the site.'),
-      'handler' => 'SearchApiViewsFacetsBlockDisplay',
-      'uses hook block' => TRUE,
-      'use ajax' => FALSE,
-      'use pager' => FALSE,
-      'use more' => TRUE,
-      'accept attachments' => TRUE,
-      'admin' => t('Facets block'),
-    );
-  }
-
-  return $ret;
+  $plugins['search_api']['base'] = $bases;
 }

@@ -5,10 +5,14 @@
  * Contains SearchApiViewsHandlerArgumentString.
  */
 
+namespace Drupal\search_api\Plugin\views\argument;
+
 /**
  * Views argument handler class for handling string fields.
+ *
+ * @ViewsArgument("search_api_string")
  */
-class SearchApiViewsHandlerArgumentString extends SearchApiViewsHandlerArgument {
+class SearchApiString extends SearchApiArgument {
 
   /**
    * Set up the query for this argument.
@@ -18,7 +22,7 @@ class SearchApiViewsHandlerArgumentString extends SearchApiViewsHandlerArgument 
   public function query($group_by = FALSE) {
     if (empty($this->value)) {
       if (!empty($this->options['break_phrase'])) {
-        views_break_phrase_string($this->argument, $this);
+        $this->breakPhraseString($this->argument, $this);
       }
       else {
         $this->value = array($this->argument);

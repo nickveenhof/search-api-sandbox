@@ -5,10 +5,24 @@
  * Contains SearchApiViewsQuery.
  */
 
+namespace Drupal\search_api\Plugin\views\query;
+
+use Drupal\Component\Utility\String;
+use Drupal\search_api\Exception;
+use Drupal\search_api\Query\FilterInterface;
+use Drupal\search_api\Query\QueryInterface;
+use Drupal\views\Plugin\views\query\QueryPluginBase;
+
 /**
  * Views query class using a Search API index as the data source.
+ *
+ * @ViewsQuery(
+ *   id = "search_api_query",
+ *   title = @Translation("Search API Query"),
+ *   help = @Translation("Query will be generated and run using the Search API.")
+ * )
  */
-class SearchApiViewsQuery extends views_plugin_query {
+class SearchApiQuery extends QueryPluginBase {
 
   /**
    * Number of results to display.
@@ -27,14 +41,14 @@ class SearchApiViewsQuery extends views_plugin_query {
   /**
    * The index this view accesses.
    *
-   * @var SearchApiIndex
+   * @var \Drupal\search_api\Index\IndexInterface
    */
   protected $index;
 
   /**
    * The query that will be executed.
    *
-   * @var SearchApiQueryInterface
+   * @var QueryInterface
    */
   protected $query;
 
@@ -95,13 +109,13 @@ class SearchApiViewsQuery extends views_plugin_query {
       $this->fields = array();
       if (substr($base_table, 0, 17) == 'search_api_index_') {
         $id = substr($base_table, 17);
-        $this->index = search_api_index_load($id);
+        $this->index = entity_load('search_api_index', $id);
         $this->query = $this->index->query(array(
           'parse mode' => $this->options['parse_mode'],
         ));
       }
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       $this->errors[] = $e->getMessage();
     }
   }
@@ -113,7 +127,7 @@ class SearchApiViewsQuery extends views_plugin_query {
    *   The field's identifier, as used by the Search API. E.g., "title" for a
    *   node's title, "author:name" for a node's author's name.
    *
-   * @return SearchApiViewsQuery
+   * @return SearchApiQuery
    *   The called object.
    */
   public function addField($field) {
@@ -131,7 +145,7 @@ class SearchApiViewsQuery extends views_plugin_query {
    * @param $order
    *   The order to sort items in - either 'ASC' or 'DESC'. Defaults to 'ASC'.
    */
-  public function add_selector_orderby($selector, $order = 'ASC') {
+  public function addSelectorOrderBy($selector, $order = 'ASC') {
     $this->query->sort($selector, $order);
   }
 
@@ -140,8 +154,8 @@ class SearchApiViewsQuery extends views_plugin_query {
    *
    * Adds some access options.
    */
-  public function option_definition() {
-    return parent::option_definition() + array(
+  public function defineOptions() {
+    return parent::defineOptions() + array(
       'search_api_bypass_access' => array(
         'default' => FALSE,
       ),
@@ -159,8 +173,8 @@ class SearchApiViewsQuery extends views_plugin_query {
    *
    * Adds an option for bypassing access checks.
    */
-  public function options_form(&$form, &$form_state) {
-    parent::options_form($form, $form_state);
+  public function buildOptionsForm(&$form, &$form_state) {
+    parent::buildOptionsForm($form, $form_state);
 
     $form['search_api_bypass_access'] = array(
       '#type' => 'checkbox',
@@ -169,7 +183,7 @@ class SearchApiViewsQuery extends views_plugin_query {
       '#default_value' => $this->options['search_api_bypass_access'],
     );
 
-    if (entity_get_info($this->index->item_type)) {
+    if (\Drupal::entityManager()->getDefinition($this->index->item_type)) {
       $form['entity_access'] = array(
         '#type' => 'checkbox',
         '#title' => t('Additional access checks on result entities'),
@@ -244,7 +258,7 @@ class SearchApiViewsQuery extends views_plugin_query {
     }
 
     // Initialize the pager and let it modify the query to add limits.
-    $view->init_pager();
+    $view->initPager();
     $this->pager->query();
 
     // Set the search ID, if it was not already set.
@@ -269,7 +283,7 @@ class SearchApiViewsQuery extends views_plugin_query {
    */
   public function alter(&$view) {
     parent::alter($view);
-    drupal_alter('search_api_views_query', $view, $this);
+    \Drupal::moduleHandler()->alter('search_api_views_query', $view, $this);
   }
 
   /**
@@ -283,7 +297,7 @@ class SearchApiViewsQuery extends views_plugin_query {
     if ($this->errors || $this->abort) {
       if (error_displayable()) {
         foreach ($this->errors as $msg) {
-          drupal_set_message(check_plain($msg), 'error');
+          drupal_set_message(String::checkPlain($msg), 'error');
         }
       }
       $view->result = array();
@@ -296,13 +310,13 @@ class SearchApiViewsQuery extends views_plugin_query {
     // FALSE.
     $skip_result_count = $this->query->getOption('skip result count', TRUE);
     if ($skip_result_count) {
-      $skip_result_count = !$this->pager->use_count_query() && empty($view->get_total_rows);
+      $skip_result_count = !$this->pager->useCountQuery() && empty($view->get_total_rows);
       $this->query->setOption('skip result count', $skip_result_count);
     }
 
     try {
-      // Trigger pager pre_execute().
-      $this->pager->pre_execute($this->query);
+      // Trigger pager preExecute().
+      $this->pager->preExecute($this->query);
 
       // Views passes sometimes NULL and sometimes the integer 0 for "All" in a
       // pager. If set to 0 items, a string "0" is passed. Therefore, we unset
@@ -326,7 +340,7 @@ class SearchApiViewsQuery extends views_plugin_query {
         if (!empty($this->pager->options['offset'])) {
           $this->pager->total_items -= $this->pager->options['offset'];
         }
-        $this->pager->update_page_info();
+        $this->pager->updatePageInfo();
       }
       $view->result = array();
       if (!empty($results['results'])) {
@@ -336,13 +350,13 @@ class SearchApiViewsQuery extends views_plugin_query {
       // extracting the results probably takes considerable time as well.
       $view->execute_time = microtime(TRUE) - $start;
 
-      // Trigger pager post_execute().
-      $this->pager->post_execute($view->result);
+      // Trigger pager postExecute().
+      $this->pager->postExecute($view->result);
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       $this->errors[] = $e->getMessage();
       // Recursion to get the same error behaviour as above.
-      return $this->execute($view);
+      $this->execute($view);
     }
   }
 
@@ -375,8 +389,8 @@ class SearchApiViewsQuery extends views_plugin_query {
     // loading any items.
     foreach ($results as $id => $result) {
       if (!empty($this->options['entity_access'])) {
-        $entity = entity_load($this->index->item_type, array($id));
-        if (!entity_access('view', $this->index->item_type, $entity[$id])) {
+        $entity = entity_load($this->index->item_type, $id);
+        if (!$entity[$id]->access('view')) {
           continue;
         }
       }
@@ -460,7 +474,7 @@ class SearchApiViewsQuery extends views_plugin_query {
    * If the current query isn't based on an entity type, the method will return
    * an empty array.
    */
-  public function get_result_entities($results, $relationship = NULL, $field = NULL) {
+  public function getResultEntities($results, $relationship = NULL, $field = NULL) {
     list($type, $wrappers) = $this->get_result_wrappers($results, $relationship, $field);
     $return = array();
     foreach ($wrappers as $i => $wrapper) {
@@ -586,7 +600,7 @@ class SearchApiViewsQuery extends views_plugin_query {
    * If $group is given, the filter is added to the relevant filter group
    * instead.
    */
-  public function filter(SearchApiQueryFilterInterface $filter, $group = NULL) {
+  public function filter(FilterInterface $filter, $group = NULL) {
     if (!$this->errors) {
       $this->where[$group]['filters'][] = $filter;
     }

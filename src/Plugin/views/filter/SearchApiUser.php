@@ -5,18 +5,24 @@
  * Contains SearchApiViewsHandlerFilterUser.
  */
 
+namespace Drupal\search_api\Plugin\views\filter;
+
+use Drupal\Component\Utility\Unicode;
+
 /**
  * Views filter handler class for handling user entities.
  *
  * Based on views_handler_filter_user_name.
+ *
+ * @ViewsFilter("search_api_user")
  */
-class SearchApiViewsHandlerFilterUser extends SearchApiViewsHandlerFilterEntity {
+class SearchApiUserBase extends SearchApiFilterEntityBase {
 
   /**
    * {@inheritdoc}
    */
-  public function value_form(&$form, &$form_state) {
-    parent::value_form($form, $form_state);
+  public function valueForm(&$form, &$form_state) {
+    parent::valueForm($form, $form_state);
 
     // Set autocompletion.
     $path = $this->isMultiValued() ? 'admin/views/ajax/autocomplete/user' : 'user/autocomplete';
@@ -26,14 +32,14 @@ class SearchApiViewsHandlerFilterUser extends SearchApiViewsHandlerFilterEntity 
   /**
    * {@inheritdoc}
    */
-  protected function ids_to_strings(array $ids) {
+  protected function idsToStrings(array $ids) {
     $names = array();
     $args[':uids'] = array_filter($ids);
     $result = db_query("SELECT uid, name FROM {users} u WHERE uid IN (:uids)", $args);
     $result = $result->fetchAllKeyed();
     foreach ($ids as $uid) {
       if (!$uid) {
-        $names[] = variable_get('anonymous', t('Anonymous'));
+        $names[] = \Drupal::config('user.settings')->get('anonymous');
       }
       elseif (isset($result[$uid])) {
         $names[] = $result[$uid];
@@ -45,11 +51,11 @@ class SearchApiViewsHandlerFilterUser extends SearchApiViewsHandlerFilterEntity 
   /**
    * {@inheritdoc}
    */
-  protected function validate_entity_strings(array &$form, array $values) {
+  protected function validateEntityStrings(array &$form, array $values) {
     $uids = array();
     $missing = array();
     foreach ($values as $value) {
-      if (drupal_strtolower($value) === drupal_strtolower(variable_get('anonymous', t('Anonymous')))) {
+      if (Unicode::strtolower($value) === Unicode::strtolower(\Drupal::config('user.settings')->get('anonymous'))) {
         $uids[] = 0;
       }
       else {
@@ -68,7 +74,7 @@ class SearchApiViewsHandlerFilterUser extends SearchApiViewsHandlerFilterEntity 
     }
 
     if ($missing) {
-      form_error($form, format_plural(count($missing), 'Unable to find user: @users', 'Unable to find users: @users', array('@users' => implode(', ', $missing))));
+      \Drupal::formBuilder()->setError($form, $form_state, \Drupal::translation()->formatPlural(count($missing), 'Unable to find user: @users', 'Unable to find users: @users', array('@users' => implode(', ', $missing))));
     }
 
     return $uids;

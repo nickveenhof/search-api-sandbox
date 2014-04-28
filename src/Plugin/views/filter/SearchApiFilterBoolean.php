@@ -5,22 +5,26 @@
  * Contains SearchApiViewsHandlerFilterBoolean.
  */
 
+namespace Drupal\search_api\Plugin\views\filter;
+
 /**
  * Views filter handler class for handling fulltext fields.
+ *
+ * @ViewsFilter("search_api_boolean")
  */
-class SearchApiViewsHandlerFilterBoolean extends SearchApiViewsHandlerFilter {
+class SearchApiFilterBoolean extends SearchApiFilter {
 
   /**
    * Provide a list of options for the operator form.
    */
-  public function operator_options() {
+  public function operatorOptions() {
     return array();
   }
 
   /**
    * Provide a form for setting the filter value.
    */
-  public function value_form(&$form, &$form_state) {
+  public function valueForm(&$form, &$form_state) {
     while (is_array($this->value)) {
       $this->value = $this->value ? array_shift($this->value) : NULL;
     }

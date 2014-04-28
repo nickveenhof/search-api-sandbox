@@ -5,16 +5,20 @@
  * Contains SearchApiViewsHandlerArgumentFulltext.
  */
 
+namespace Drupal\search_api\Plugin\views\argument;
+
 /**
  * Views argument handler class for handling fulltext fields.
+ *
+ * @ViewsArgument("search_api_fulltext")
  */
-class SearchApiViewsHandlerArgumentFulltext extends SearchApiViewsHandlerArgument {
+class SearchApiFulltext extends SearchApiArgument {
 
   /**
    * Specify the options this filter uses.
    */
-  public function option_definition() {
-    $options = parent::option_definition();
+  public function defineOptions() {
+    $options = parent::defineOptions();
     $options['fields'] = array('default' => array());
     $options['conjunction'] = array('default' => 'AND');
     return $options;
@@ -23,8 +27,8 @@ class SearchApiViewsHandlerArgumentFulltext extends SearchApiViewsHandlerArgumen
   /**
    * Extend the options form a bit.
    */
-  public function options_form(&$form, &$form_state) {
-    parent::options_form($form, $form_state);
+  public function buildOptionsForm(&$form, &$form_state) {
+    parent::buildOptionsForm($form, $form_state);
 
     $form['help']['#markup'] = t('Note: You can change how search keys are parsed under "Advanced" > "Query settings".');
 
@@ -93,7 +97,7 @@ class SearchApiViewsHandlerArgumentFulltext extends SearchApiViewsHandlerArgumen
    */
   protected function getFulltextFields() {
     $ret = array();
-    $index = search_api_index_load(substr($this->table, 17));
+    $index = entity_load('search_api_index', substr($this->table, 17));
     if (!empty($index->options['fields'])) {
       $fields = $index->getFields();
       foreach ($index->getFulltextFields() as $field) {

@@ -5,10 +5,17 @@
  * Contains the SearchApiViewsHandlerFilterOptions class.
  */
 
+namespace Drupal\search_api\Plugin\views\filter;
+
+use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\Unicode;
+
 /**
  * Views filter handler for fields with a limited set of possible values.
+ *
+ * @ViewsFilter("search_api_options")
  */
-class SearchApiViewsHandlerFilterOptions extends SearchApiViewsHandlerFilter {
+class SearchApiFilterOptions extends SearchApiFilter {
 
   /**
    * Stores the values which are available on the form.
@@ -35,7 +42,7 @@ class SearchApiViewsHandlerFilterOptions extends SearchApiViewsHandlerFilter {
       $index = $this->query->getIndex();
     }
     elseif (substr($this->view->base_table, 0, 17) == 'search_api_index_') {
-      $index = search_api_index_load(substr($this->view->base_table, 17));
+      $index = entity_load('search_api_index', substr($this->view->base_table, 17));
     }
     else {
       return NULL;
@@ -63,7 +70,7 @@ class SearchApiViewsHandlerFilterOptions extends SearchApiViewsHandlerFilter {
   /**
    * Fills the value_options property with all possible options.
    */
-  protected function get_value_options() {
+  protected function getValueOptions() {
     if (isset($this->value_options)) {
       return;
     }
@@ -80,7 +87,7 @@ class SearchApiViewsHandlerFilterOptions extends SearchApiViewsHandlerFilter {
   /**
    * Provide a list of options for the operator form.
    */
-  public function operator_options() {
+  public function operatorOptions() {
     $options = array(
       '=' => t('Is one of'),
       'all of' => t('Is all of'),
@@ -98,16 +105,16 @@ class SearchApiViewsHandlerFilterOptions extends SearchApiViewsHandlerFilter {
   /**
    * Set "reduce" option to FALSE by default.
    */
-  public function expose_options() {
-    parent::expose_options();
+  public function defaultExposedOptions() {
+    parent::defaultExposeOptions();
     $this->options['expose']['reduce'] = FALSE;
   }
 
   /**
    * Add the "reduce" option to the exposed form.
    */
-  public function expose_form(&$form, &$form_state) {
-    parent::expose_form($form, $form_state);
+  public function buildExposedForm(&$form, &$form_state) {
+    parent::buildExposedForm($form, $form_state);
     $form['expose']['reduce'] = array(
       '#type' => 'checkbox',
       '#title' => t('Limit list to selected items'),
@@ -119,8 +126,8 @@ class SearchApiViewsHandlerFilterOptions extends SearchApiViewsHandlerFilter {
   /**
    * Define "reduce" option.
    */
-  public function option_definition() {
-    $options = parent::option_definition();
+  public function defineOptions() {
+    $options = parent::defineOptions();
     $options['expose']['contains']['reduce'] = array('default' => FALSE);
     return $options;
   }
@@ -128,7 +135,7 @@ class SearchApiViewsHandlerFilterOptions extends SearchApiViewsHandlerFilter {
   /**
    * Reduce the options according to the selection.
    */
-  protected function reduce_value_options() {
+  protected function reduceValueOptions() {
     foreach ($this->value_options as $id => $option) {
       if (!isset($this->options['value'][$id])) {
         unset($this->value_options[$id]);
@@ -140,7 +147,7 @@ class SearchApiViewsHandlerFilterOptions extends SearchApiViewsHandlerFilter {
   /**
    * Save set checkboxes.
    */
-  public function value_submit($form, &$form_state) {
+  public function valueSubmit($form, &$form_state) {
     // Drupal's FAPI system automatically puts '0' in for any checkbox that
     // was not set, and the key to the checkbox if it is set.
     // Unfortunately, this means that if the key to that checkbox is 0,
@@ -156,10 +163,10 @@ class SearchApiViewsHandlerFilterOptions extends SearchApiViewsHandlerFilter {
   /**
    * Provide a form for setting options.
    */
-  public function value_form(&$form, &$form_state) {
-    $this->get_value_options();
+  public function valueForm(&$form, &$form_state) {
+    $this->getValueOptions();
     if (!empty($this->options['expose']['reduce']) && !empty($form_state['exposed'])) {
-      $options = $this->reduce_value_options();
+      $options = $this->reduceValueOptions();
     }
     else {
       $options = $this->value_options;
@@ -194,7 +201,7 @@ class SearchApiViewsHandlerFilterOptions extends SearchApiViewsHandlerFilter {
   /**
    * Provides a summary of this filter's value for the admin UI.
    */
-  public function admin_summary() {
+  public function adminSummary() {
     if (!empty($this->options['exposed'])) {
       return t('exposed');
     }
@@ -210,12 +217,12 @@ class SearchApiViewsHandlerFilterOptions extends SearchApiViewsHandlerFilter {
       return;
     }
 
-    $operator_options = $this->operator_options();
+    $operator_options = $this->operatorOptions();
     $operator = $operator_options[$this->operator];
     $values = '';
 
     // Remove every element which is not known.
-    $this->get_value_options();
+    $this->getValueOptions();
     foreach ($this->value as $i => $value) {
       if (!isset($this->value_options[$value])) {
         unset($this->value[$i]);
@@ -237,19 +244,19 @@ class SearchApiViewsHandlerFilterOptions extends SearchApiViewsHandlerFilter {
           break;
       }
       // If there is only a single value, use just the plain operator, = or <>.
-      $operator = check_plain($operator);
-      $values = check_plain($this->value_options[reset($this->value)]);
+      $operator = String::checkPlain($operator);
+      $values = String::checkPlain($this->value_options[reset($this->value)]);
     }
     else {
       foreach ($this->value as $value) {
         if ($values !== '') {
           $values .= ', ';
         }
-        if (drupal_strlen($values) > 20) {
+        if (Unicode::strlen($values) > 20) {
           $values .= '…';
           break;
         }
-        $values .= check_plain($this->value_options[$value]);
+        $values .= String::checkPlain($this->value_options[$value]);
       }
     }
 
@@ -261,11 +268,11 @@ class SearchApiViewsHandlerFilterOptions extends SearchApiViewsHandlerFilter {
    */
   public function query() {
     if ($this->operator === 'empty') {
-      $this->query->condition($this->real_field, NULL, '=', $this->options['group']);
+      $this->query->condition($this->realField, NULL, '=', $this->options['group']);
       return;
     }
     if ($this->operator === 'not empty') {
-      $this->query->condition($this->real_field, NULL, '<>', $this->options['group']);
+      $this->query->condition($this->realField, NULL, '<>', $this->options['group']);
       return;
     }
 
@@ -292,20 +299,20 @@ class SearchApiViewsHandlerFilterOptions extends SearchApiViewsHandlerFilter {
     // "is none of"), or want to find only items with no value for the field.
     if ($this->value === array()) {
       if ($operator != '<>') {
-        $this->query->condition($this->real_field, NULL, '=', $this->options['group']);
+        $this->query->condition($this->realField, NULL, '=', $this->options['group']);
       }
       return;
     }
 
     if (is_scalar($this->value) && $this->value !== '') {
-      $this->query->condition($this->real_field, $this->value, $operator, $this->options['group']);
+      $this->query->condition($this->realField, $this->value, $operator, $this->options['group']);
     }
     elseif ($this->value) {
       $filter = $this->query->createFilter($conjunction);
       // $filter will be NULL if there were errors in the query.
       if ($filter) {
         foreach ($this->value as $v) {
-          $filter->condition($this->real_field, $v, $operator);
+          $filter->condition($this->realField, $v, $operator);
         }
         $this->query->filter($filter, $this->options['group']);
       }

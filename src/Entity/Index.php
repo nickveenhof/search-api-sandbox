@@ -926,6 +926,9 @@ class Index extends ConfigEntityBase implements IndexInterface {
     $this->fulltextFields = NULL;
     $this->processors = NULL;
     Cache::invalidateTags(array('search_api_index' => array($this->id())));
+    if (\Drupal::moduleHandler()->moduleExists('views')) {
+      views_invalidate_cache();
+    }
   }
 
   /**

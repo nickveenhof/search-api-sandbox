@@ -5,10 +5,16 @@
  *   Contains the SearchApiViewsHandlerArgumentTaxonomyTerm class.
  */
 
+namespace Drupal\search_api\Plugin\views\argument;
+
+use Drupal\Component\Utility\String;
+
 /**
  * Defines a contextual filter searching through all indexed taxonomy fields.
+ *
+ * @ViewsArgument("search_api_taxonomy_term")
  */
-class SearchApiViewsHandlerArgumentTaxonomyTerm extends SearchApiViewsHandlerArgument {
+class SearchApiTaxonomyTerm extends SearchApiArgument {
 
   /**
    * Set up the query for this argument.
@@ -76,14 +82,14 @@ class SearchApiViewsHandlerArgumentTaxonomyTerm extends SearchApiViewsHandlerArg
       foreach ($this->value as $tid) {
         $taxonomy_term = taxonomy_term_load($tid);
         if ($taxonomy_term) {
-          $terms[] = check_plain($taxonomy_term->name);
+          $terms[] = String::checkPlain($taxonomy_term->name);
         }
       }
 
-      return $terms ? implode(', ', $terms) : check_plain($this->argument);
+      return $terms ? implode(', ', $terms) : String::checkPlain($this->argument);
     }
     else {
-      return check_plain($this->argument);
+      return String::checkPlain($this->argument);
     }
   }
 
@@ -94,7 +100,7 @@ class SearchApiViewsHandlerArgumentTaxonomyTerm extends SearchApiViewsHandlerArg
    */
   protected function fillValue() {
     if (!empty($this->options['break_phrase'])) {
-      views_break_phrase($this->argument, $this);
+      $this->breakPhrase($this->argument, $this);
     }
     else {
       $this->value = array($this->argument);

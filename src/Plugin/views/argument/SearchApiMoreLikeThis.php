@@ -5,17 +5,23 @@
  * Contains SearchApiViewsHandlerArgumentMoreLikeThis.
  */
 
+namespace Drupal\search_api\Plugin\views\argument;
+
+use Drupal\search_api\Exception\SearchApiException;
+
 /**
  * Views argument handler providing a list of related items for search servers
  * supporting the "search_api_mlt" feature.
+ *
+ * @ViewsArgument("search_api_more_like_this")
  */
-class SearchApiViewsHandlerArgumentMoreLikeThis extends SearchApiViewsHandlerArgument {
+class SearchApiMoreLikeThis extends SearchApiArgument {
 
   /**
    * Specify the options this filter uses.
    */
-  public function option_definition() {
-    $options = parent::option_definition();
+  public function defineOptions() {
+    $options = parent::defineOptions();
     unset($options['break_phrase']);
     unset($options['not']);
     $options['fields'] = array('default' => array());
@@ -25,12 +31,12 @@ class SearchApiViewsHandlerArgumentMoreLikeThis extends SearchApiViewsHandlerArg
   /**
    * Extend the options form a bit.
    */
-  public function options_form(&$form, &$form_state) {
-    parent::options_form($form, $form_state);
+  public function buildOptionsForm(&$form, &$form_state) {
+    parent::buildOptionsForm($form, $form_state);
     unset($form['break_phrase']);
     unset($form['not']);
 
-    $index = search_api_index_load(substr($this->table, 17));
+    $index = entity_load('search_api_index', substr($this->table, 17));
     if (!empty($index->options['fields'])) {
       $fields = array();
       foreach ($index->getFields() as $key => $field) {

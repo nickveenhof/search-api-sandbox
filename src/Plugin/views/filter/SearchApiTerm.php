@@ -5,25 +5,29 @@
  * Contains SearchApiViewsHandlerFilterTaxonomyTerm.
  */
 
+namespace Drupal\search_api\Plugin\views\filter;
+
 /**
  * Views filter handler class for taxonomy term entities.
  *
  * Based on views_handler_filter_term_node_tid.
+ *
+ * @ViewsFilter("search_api_term")
  */
-class SearchApiViewsHandlerFilterTaxonomyTerm extends SearchApiViewsHandlerFilterEntity {
+class SearchApiTermBase extends SearchApiFilterEntityBase {
 
   /**
    * {@inheritdoc}
    */
-  public function has_extra_options() {
+  public function hasExtraOptions() {
     return !empty($this->definition['vocabulary']);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function option_definition() {
-    $options = parent::option_definition();
+  public function defineOptions() {
+    $options = parent::defineOptions();
 
     $options['type'] = array('default' => !empty($this->definition['vocabulary']) ? 'textfield' : 'select');
     $options['hierarchy'] = array('default' => 0);
@@ -35,7 +39,7 @@ class SearchApiViewsHandlerFilterTaxonomyTerm extends SearchApiViewsHandlerFilte
   /**
    * {@inheritdoc}
    */
-  public function extra_options_form(&$form, &$form_state) {
+  public function buildExtraOptionsForm(&$form, &$form_state) {
     $form['type'] = array(
       '#type' => 'radios',
       '#title' => t('Selection type'),
@@ -54,12 +58,12 @@ class SearchApiViewsHandlerFilterTaxonomyTerm extends SearchApiViewsHandlerFilte
   /**
    * {@inheritdoc}
    */
-  public function value_form(&$form, &$form_state) {
-    parent::value_form($form, $form_state);
+  public function valueForm(&$form, &$form_state) {
+    parent::valueForm($form, $form_state);
 
     if (!empty($this->definition['vocabulary'])) {
-      $vocabulary = taxonomy_vocabulary_machine_name_load($this->definition['vocabulary']);
-      $title = t('Select terms from vocabulary @voc', array('@voc' => $vocabulary->name));
+      $vocabulary = entity_load('taxonomy_vocabulary', $this->definition['vocabulary']);
+      $title = t('Select terms from vocabulary @voc', array('@voc' => $vocabulary->label()));
     }
     else {
       $vocabulary = FALSE;
@@ -68,16 +72,16 @@ class SearchApiViewsHandlerFilterTaxonomyTerm extends SearchApiViewsHandlerFilte
     $form['value']['#title'] = $title;
 
     if ($vocabulary && $this->options['type'] == 'textfield') {
-      $form['value']['#autocomplete_path'] = 'admin/views/ajax/autocomplete/taxonomy/' . $vocabulary->vid;
+      $form['value']['#autocomplete_path'] = 'admin/views/ajax/autocomplete/taxonomy/' . $vocabulary->id();
     }
     else {
       if ($vocabulary && !empty($this->options['hierarchy'])) {
-        $tree = taxonomy_get_tree($vocabulary->vid);
+        $tree = taxonomy_get_tree($vocabulary->id());
         $options = array();
 
         if ($tree) {
           foreach ($tree as $term) {
-            $choice = new stdClass();
+            $choice = new \stdClass();
             $choice->option = array($term->tid => str_repeat('-', $term->depth) . $term->name);
             $options[] = $choice;
           }
@@ -94,7 +98,7 @@ class SearchApiViewsHandlerFilterTaxonomyTerm extends SearchApiViewsHandlerFilte
         $query->orderby('td.name');
         $query->addTag('term_access');
         if ($vocabulary) {
-          $query->condition('tv.machine_name', $vocabulary->machine_name);
+          $query->condition('tv.vid', $vocabulary->id());
         }
         $result = $query->execute();
         foreach ($result as $term) {
@@ -108,7 +112,7 @@ class SearchApiViewsHandlerFilterTaxonomyTerm extends SearchApiViewsHandlerFilte
         $identifier = $this->options['expose']['identifier'];
 
         if (!empty($this->options['expose']['reduce'])) {
-          $options = $this->reduce_value_options($options);
+          $options = $this->reduceValueOptions($options);
 
           if (!empty($this->options['expose']['multiple']) && empty($this->options['expose']['required'])) {
             $default_value = array();
@@ -149,7 +153,7 @@ class SearchApiViewsHandlerFilterTaxonomyTerm extends SearchApiViewsHandlerFilte
   /**
    * Reduces the available exposed options according to the selection.
    */
-  protected function reduce_value_options(array $options) {
+  protected function reduceValueOptions(array $options) {
     foreach ($options as $id => $option) {
       if (empty($this->options['value'][$id])) {
         unset($options[$id]);
@@ -161,26 +165,26 @@ class SearchApiViewsHandlerFilterTaxonomyTerm extends SearchApiViewsHandlerFilte
   /**
    * {@inheritdoc}
    */
-  public function value_validate($form, &$form_state) {
+  public function valueValidate($form, &$form_state) {
     // We only validate if they've chosen the text field style.
     if ($this->options['type'] != 'textfield') {
       return;
     }
 
-    parent::value_validate($form, $form_state);
+    parent::valueValidate($form, $form_state);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function accept_exposed_input($input) {
+  public function acceptExposedInput($input) {
     if (empty($this->options['exposed'])) {
       return TRUE;
     }
 
     // If view is an attachment and is inheriting exposed filters, then assume
     // exposed input has already been validated.
-    if (!empty($this->view->is_attachment) && $this->view->display_handler->uses_exposed()) {
+    if (!empty($this->view->is_attachment) && $this->view->display_handler->usesExposed()) {
       $this->validated_exposed_input = (array) $this->view->exposed_raw_input[$this->options['expose']['identifier']];
     }
 
@@ -189,13 +193,13 @@ class SearchApiViewsHandlerFilterTaxonomyTerm extends SearchApiViewsHandlerFilte
       return FALSE;
     }
 
-    return parent::accept_exposed_input($input);
+    return parent::acceptExposedInput($input);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function exposed_validate(&$form, &$form_state) {
+  public function validateExposed(&$form, &$form_state) {
     if (empty($this->options['exposed']) || empty($this->options['expose']['identifier'])) {
       return;
     }
@@ -213,13 +217,13 @@ class SearchApiViewsHandlerFilterTaxonomyTerm extends SearchApiViewsHandlerFilte
       return;
     }
 
-    parent::exposed_validate($form, $form_state);
+    parent::validateExposed($form, $form_state);
   }
 
   /**
    * {@inheritdoc}
    */
-  protected function validate_entity_strings(array &$form, array $values) {
+  protected function validateEntityStrings(array &$form, array $values) {
     if (empty($values)) {
       return array();
     }
@@ -267,8 +271,8 @@ class SearchApiViewsHandlerFilterTaxonomyTerm extends SearchApiViewsHandlerFilte
   /**
    * {@inheritdoc}
    */
-  public function expose_form(&$form, &$form_state) {
-    parent::expose_form($form, $form_state);
+  public function buildExposedForm(&$form, &$form_state) {
+    parent::buildExposedForm($form, $form_state);
     if ($this->options['type'] != 'select') {
       unset($form['expose']['reduce']);
     }
@@ -283,7 +287,7 @@ class SearchApiViewsHandlerFilterTaxonomyTerm extends SearchApiViewsHandlerFilte
   /**
    * {@inheritdoc}
    */
-  protected function ids_to_strings(array $ids) {
+  protected function idsToStrings(array $ids) {
     return implode(', ', db_select('taxonomy_term_data', 'td')
       ->fields('td', array('name'))
       ->condition('td.tid', array_filter($ids))

@@ -5,19 +5,23 @@
  *   Contains the SearchApiViewsHandlerFilterLanguage class.
  */
 
+namespace Drupal\search_api\Plugin\views\filter;
+
 /**
  * Views filter handler class for handling the special "Item language" field.
  *
  * Definition items:
  * - options: An array of possible values for this field.
+ *
+ * @ViewsFilter("search_api_language")
  */
-class SearchApiViewsHandlerFilterLanguage extends SearchApiViewsHandlerFilterOptions {
+class SearchApiLanguage extends SearchApiFilterOptions {
 
   /**
    * {@inheritdoc}
    */
-  protected function get_value_options() {
-    parent::get_value_options();
+  protected function getValueOptions() {
+    parent::getValueOptions();
     $this->value_options = array(
       'current' => t("Current user's language"),
       'default' => t('Default site language'),
@@ -38,7 +42,7 @@ class SearchApiViewsHandlerFilterLanguage extends SearchApiViewsHandlerFilterOpt
         $this->value[$i] = $language_content->language;
       }
       elseif ($v == 'default') {
-        $this->value[$i] = language_default('language');
+        $this->value[$i] = \Drupal::languageManager()->getDefaultLanguage('language');
       }
     }
     parent::query();

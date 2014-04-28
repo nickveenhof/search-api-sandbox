@@ -5,10 +5,17 @@
  * Contains SearchApiViewsHandlerFilter.
  */
 
+namespace Drupal\search_api\Plugin\views\filter;
+
+use Drupal\Component\Utility\String;
+use Drupal\views\Plugin\views\filter\FilterPluginBase;
+
 /**
  * Views filter handler base class for handling all "normal" cases.
+ *
+ * @ViewsFilter("search_api_filter")
  */
-class SearchApiViewsHandlerFilter extends views_handler_filter {
+class SearchApiFilter extends FilterPluginBase {
 
   /**
    * The value to filter for.
@@ -27,14 +34,14 @@ class SearchApiViewsHandlerFilter extends views_handler_filter {
   /**
    * The associated views query object.
    *
-   * @var SearchApiViewsQuery
+   * @var \Drupal\search_api\Plugin\views\query\SearchApiQuery
    */
   public $query;
 
   /**
    * Provide a list of options for the operator form.
    */
-  public function operator_options() {
+  public function operatorOptions() {
     return array(
       '<' => t('Is less than'),
       '<=' => t('Is less than or equal to'),
@@ -50,7 +57,7 @@ class SearchApiViewsHandlerFilter extends views_handler_filter {
   /**
    * Provide a form for setting the filter value.
    */
-  public function value_form(&$form, &$form_state) {
+  public function ValueForm(&$form, &$form_state) {
     while (is_array($this->value) && count($this->value) < 2) {
       $this->value = $this->value ? reset($this->value) : NULL;
     }
@@ -81,7 +88,7 @@ class SearchApiViewsHandlerFilter extends views_handler_filter {
   /**
    * Display the filter on the administrative summary
    */
-  function admin_summary() {
+  function adminSummary() {
     if (!empty($this->options['exposed'])) {
       return t('exposed');
     }
@@ -93,7 +100,7 @@ class SearchApiViewsHandlerFilter extends views_handler_filter {
       return t('is not empty');
     }
 
-    return check_plain((string) $this->operator) . ' ' . check_plain((string) $this->value);
+    return String::checkPlain((string) $this->operator) . ' ' . String::checkPlain((string) $this->value);
   }
 
   /**
@@ -101,17 +108,17 @@ class SearchApiViewsHandlerFilter extends views_handler_filter {
    */
   public function query() {
     if ($this->operator === 'empty') {
-      $this->query->condition($this->real_field, NULL, '=', $this->options['group']);
+      $this->query->condition($this->realField, NULL, '=', $this->options['group']);
     }
     elseif ($this->operator === 'not empty') {
-      $this->query->condition($this->real_field, NULL, '<>', $this->options['group']);
+      $this->query->condition($this->realField, NULL, '<>', $this->options['group']);
     }
     else {
       while (is_array($this->value)) {
         $this->value = $this->value ? reset($this->value) : NULL;
       }
       if (strlen($this->value) > 0) {
-        $this->query->condition($this->real_field, $this->value, $this->operator, $this->options['group']);
+        $this->query->condition($this->realField, $this->value, $this->operator, $this->options['group']);
       }
     }
   }

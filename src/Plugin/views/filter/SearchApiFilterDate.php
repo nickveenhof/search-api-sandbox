@@ -5,16 +5,20 @@
  * Contains SearchApiViewsHandlerFilterDate.
  */
 
+namespace Drupal\search_api\Plugin\views\filter;
+
 /**
  * Views filter handler base class for handling all "normal" cases.
+ *
+ * @ViewsFilter("search_api_date")
  */
-class SearchApiViewsHandlerFilterDate extends SearchApiViewsHandlerFilter {
+class SearchApiFilterDate extends SearchApiFilter {
 
   /**
    * Add a "widget type" option.
    */
-  public function option_definition() {
-    return parent::option_definition() + array(
+  public function defineOptions() {
+    return parent::defineOptions() + array(
       'widget_type' => array('default' => 'default'),
     );
   }
@@ -22,8 +26,8 @@ class SearchApiViewsHandlerFilterDate extends SearchApiViewsHandlerFilter {
   /**
    * If the date popup module is enabled, provide the extra option setting.
    */
-  public function has_extra_options() {
-    if (module_exists('date_popup')) {
+  public function hasExtraOptions() {
+    if (\Drupal::moduleHandler()->moduleExists('date_popup')) {
       return TRUE;
     }
     return FALSE;
@@ -32,9 +36,9 @@ class SearchApiViewsHandlerFilterDate extends SearchApiViewsHandlerFilter {
   /**
    * Add extra options if we allow the date popup widget.
    */
-  public function extra_options_form(&$form, &$form_state) {
-    parent::extra_options_form($form, $form_state);
-    if (module_exists('date_popup')) {
+  public function buildExraOptionsForm(&$form, &$form_state) {
+    parent::buildExtraOptionsForm($form, $form_state);
+    if (\Drupal::moduleHandler()->moduleExists('date_popup')) {
       $widget_options = array('default' => 'Default', 'date_popup' => 'Date popup');
       $form['widget_type'] = array(
         '#type' => 'radios',
@@ -48,12 +52,12 @@ class SearchApiViewsHandlerFilterDate extends SearchApiViewsHandlerFilter {
   /**
    * Provide a form for setting the filter value.
    */
-  public function value_form(&$form, &$form_state) {
-    parent::value_form($form, $form_state);
+  public function valueForm(&$form, &$form_state) {
+    parent::valueForm($form, $form_state);
 
     // If we are using the date popup widget, overwrite the settings of the form
     // according to what date_popup expects.
-    if ($this->options['widget_type'] == 'date_popup' && module_exists('date_popup')) {
+    if ($this->options['widget_type'] == 'date_popup' && \Drupal::moduleHandler()->moduleExists('date_popup')) {
       $form['value']['#type'] = 'date_popup';
       $form['value']['#date_format'] = 'm/d/Y';
       unset($form['value']['#description']);
@@ -72,10 +76,10 @@ class SearchApiViewsHandlerFilterDate extends SearchApiViewsHandlerFilter {
    */
   public function query() {
     if ($this->operator === 'empty') {
-      $this->query->condition($this->real_field, NULL, '=', $this->options['group']);
+      $this->query->condition($this->realField, NULL, '=', $this->options['group']);
     }
     elseif ($this->operator === 'not empty') {
-      $this->query->condition($this->real_field, NULL, '<>', $this->options['group']);
+      $this->query->condition($this->realField, NULL, '<>', $this->options['group']);
     }
     else {
       while (is_array($this->value)) {
@@ -83,7 +87,7 @@ class SearchApiViewsHandlerFilterDate extends SearchApiViewsHandlerFilter {
       }
       $v = is_numeric($this->value) ? $this->value : strtotime($this->value, REQUEST_TIME);
       if ($v !== FALSE) {
-        $this->query->condition($this->real_field, $v, $this->operator, $this->options['group']);
+        $this->query->condition($this->realField, $v, $this->operator, $this->options['group']);
       }
     }
   }

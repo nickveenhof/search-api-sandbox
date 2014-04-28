@@ -5,15 +5,19 @@
  * Contains SearchApiViewsHandlerSort.
  */
 
+namespace Drupal\search_api\Plugin\views\sort;
+
+use Drupal\views\Plugin\views\sort\Standard;
+
 /**
  * Class for sorting results according to a specified field.
  */
-class SearchApiViewsHandlerSort extends views_handler_sort {
+class SearchApiSort extends Standard {
 
   /**
    * The associated views query object.
    *
-   * @var SearchApiViewsQuery
+   * @var \Drupal\search_api\Plugin\views\query\SearchApiQuery
    */
   public $query;
 
@@ -29,7 +33,7 @@ class SearchApiViewsHandlerSort extends views_handler_sort {
       $sort = &$this->query->getSort();
       $sort = array();
     }
-    $this->query->sort($this->real_field, $this->options['order']);
+    $this->query->sort($this->realField, $this->options['order']);
   }
 
 }

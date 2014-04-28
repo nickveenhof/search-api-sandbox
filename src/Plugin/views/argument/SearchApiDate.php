@@ -5,10 +5,16 @@
  * Contains the SearchApiViewsHandlerArgumentDate class.
  */
 
+namespace Drupal\search_api\Plugin\views\argument;
+
+use Drupal\Component\Utility\String;
+
 /**
  * Defines a contextual filter searching for a date or date range.
+ *
+ * @ViewsArgument("search_api_date")
  */
-class SearchApiViewsHandlerArgumentDate extends SearchApiViewsHandlerArgument {
+class SearchApiDate extends SearchApiArgument {
 
   /**
    * {@inheritdoc}
@@ -151,11 +157,10 @@ class SearchApiViewsHandlerArgumentDate extends SearchApiViewsHandlerArgument {
           $dates[] = $datestr;
         }
       }
-
-      return $dates ? implode(', ', $dates) : check_plain($this->argument);
+      return $dates ? implode(', ', $dates) : String::checkPlain($this->argument);
     }
 
-    return check_plain($this->argument);
+    return String::checkPlain($this->argument);
   }
 
 }

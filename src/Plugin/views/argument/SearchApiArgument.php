@@ -5,15 +5,22 @@
  * Contains SearchApiViewsHandlerArgument.
  */
 
+namespace Drupal\search_api\Plugin\views\argument;
+
+use Drupal\Component\Utility\Unicode;
+use Drupal\views\Plugin\views\argument\ArgumentPluginBase;
+
 /**
  * Views argument handler class for handling all non-fulltext types.
+ *
+ * @ViewsArgument("search_api_argument")
  */
-class SearchApiViewsHandlerArgument extends views_handler_argument {
+class SearchApiArgument extends ArgumentPluginBase {
 
   /**
    * The associated views query object.
    *
-   * @var SearchApiViewsQuery
+   * @var \Drupal\search_api\Plugin\views\query\SearchApiQuery
    */
   public $query;
 
@@ -44,7 +51,7 @@ class SearchApiViewsHandlerArgument extends views_handler_argument {
    *
    * Override this method to provide additional (or fewer) default behaviors.
    */
-  public function default_actions($which = NULL) {
+  public function defaultActions($which = NULL) {
     $defaults = array(
       'ignore' => array(
         'title' => t('Display all values'),
@@ -76,8 +83,11 @@ class SearchApiViewsHandlerArgument extends views_handler_argument {
     return $defaults;
   }
 
-  public function option_definition() {
-    $options = parent::option_definition();
+  /**
+   * {@inheritdoc}
+   */
+  public function defineOptions() {
+    $options = parent::defineOptions();
 
     $options['break_phrase'] = array('default' => FALSE);
     $options['not'] = array('default' => FALSE);
@@ -85,8 +95,11 @@ class SearchApiViewsHandlerArgument extends views_handler_argument {
     return $options;
   }
 
-  public function options_form(&$form, &$form_state) {
-    parent::options_form($form, $form_state);
+  /**
+   * {@inheritdoc}
+   */
+  public function buildOptionsForm(&$form, &$form_state) {
+    parent::buildOptionsForm($form, $form_state);
 
     // Allow passing multiple values.
     $form['break_phrase'] = array(
@@ -114,7 +127,7 @@ class SearchApiViewsHandlerArgument extends views_handler_argument {
   public function query($group_by = FALSE) {
     if (empty($this->value)) {
       if (!empty($this->options['break_phrase'])) {
-        views_break_phrase($this->argument, $this);
+        $this->breakPhrase($this->argument, $this);
       }
       else {
         $this->value = array($this->argument);
@@ -124,7 +137,7 @@ class SearchApiViewsHandlerArgument extends views_handler_argument {
     $operator = empty($this->options['not']) ? '=' : '<>';
 
     if (count($this->value) > 1) {
-      $filter = $this->query->createFilter(drupal_strtoupper($this->operator));
+      $filter = $this->query->createFilter(Unicode::strtoupper($this->operator));
       // $filter will be NULL if there were errors in the query.
       if ($filter) {
         foreach ($this->value as $value) {

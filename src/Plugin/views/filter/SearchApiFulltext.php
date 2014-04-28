@@ -5,23 +5,29 @@
  * Contains SearchApiViewsHandlerFilterFulltext.
  */
 
+namespace Drupal\search_api\Plugin\views\filter;
+
+use Drupal\Component\Utility\Unicode;
+
 /**
  * Views filter handler class for handling fulltext fields.
+ *
+ * @ViewsFilter("search_api_fulltext")
  */
-class SearchApiViewsHandlerFilterFulltext extends SearchApiViewsHandlerFilterText {
+class SearchApiFulltext extends SearchApiFilterText {
 
   /**
    * Displays the operator form, adding a description.
    */
-  public function show_operator_form(&$form, &$form_state) {
-    $this->operator_form($form, $form_state);
+  public function showOperatorForm(&$form, &$form_state) {
+    $this->operatorForm($form, $form_state);
     $form['operator']['#description'] = t('This operator is only useful when using \'Search keys\'.');
   }
 
   /**
    * Provide a list of options for the operator form.
    */
-  public function operator_options() {
+  public function operatorOptions() {
     return array(
       'AND' => t('Contains all of these words'),
       'OR' => t('Contains any of these words'),
@@ -32,8 +38,8 @@ class SearchApiViewsHandlerFilterFulltext extends SearchApiViewsHandlerFilterTex
   /**
    * Specify the options this filter uses.
    */
-  public function option_definition() {
-    $options = parent::option_definition();
+  public function defineOptions() {
+    $options = parent::defineOptions();
 
     $options['operator']['default'] = 'AND';
 
@@ -47,8 +53,8 @@ class SearchApiViewsHandlerFilterFulltext extends SearchApiViewsHandlerFilterTex
   /**
    * Extend the options form a bit.
    */
-  public function options_form(&$form, &$form_state) {
-    parent::options_form($form, $form_state);
+  public function buildOptionsForm(&$form, &$form_state) {
+    parent::buildOptionsForm($form, $form_state);
 
     $form['mode'] = array(
       '#title' => t('Use as'),
@@ -94,7 +100,7 @@ class SearchApiViewsHandlerFilterFulltext extends SearchApiViewsHandlerFilterTex
   /**
    * {@inheritdoc}
    */
-  public function exposed_validate(&$form, &$form_state) {
+  public function validateExposed(&$form, &$form_state) {
     // Only validate exposed input.
     if (empty($this->options['exposed']) || empty($this->options['expose']['identifier'])) {
       return;
@@ -120,14 +126,14 @@ class SearchApiViewsHandlerFilterFulltext extends SearchApiViewsHandlerFilterTex
 
     $words = preg_split('/\s+/', $input);
     foreach ($words as $i => $word) {
-      if (drupal_strlen($word) < $this->options['min_length']) {
+      if (Unicode::strlen($word) < $this->options['min_length']) {
         unset($words[$i]);
       }
     }
     if (!$words) {
       $vars['@count'] = $this->options['min_length'];
       $msg = t('You must include at least one positive keyword with @count characters or more.', $vars);
-      form_error($form[$identifier], $msg);
+      \Drupal::formBuilder()->setError($form[$identifier], $form_state, $msg);
     }
     $input = implode(' ', $words);
   }
@@ -200,7 +206,7 @@ class SearchApiViewsHandlerFilterFulltext extends SearchApiViewsHandlerFilterTex
    */
   protected function getFulltextFields() {
     $fields = array();
-    $index = search_api_index_load(substr($this->table, 17));
+    $index = entity_load('search_api_index', substr($this->table, 17));
     if (!empty($index->options['fields'])) {
       $f = $index->getFields();
       foreach ($index->getFulltextFields() as $name) {
