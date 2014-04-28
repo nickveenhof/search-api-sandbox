@@ -115,7 +115,7 @@ class SearchApiCache extends Time {
         $key_data['exposed_info'] = $_GET['exposed_info'];
       }
 
-      $this->_results_key = $this->view->name . ':' . $this->display->id . ':results:' . md5(serialize($key_data));
+      $this->_results_key = $this->view->storage->id() . ':' . $this->view->getDisplay()->getPluginId() . ':results:' . md5(serialize($key_data));
     }
 
     return $this->_results_key;

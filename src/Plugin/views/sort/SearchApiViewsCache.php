@@ -7,12 +7,14 @@
 
 namespace Drupal\search_api\Plugin\views\sort;
 
-use Drupal\views\Plugin\views\sort\Standard;
+use Drupal\views\Plugin\views\sort\SortPluginBase;
 
 /**
  * Class for sorting results according to a specified field.
+ *
+ * @ViewsSort("search_api_sort")
  */
-class SearchApiSort extends Standard {
+class SearchApiSort extends SortPluginBase {
 
   /**
    * The associated views query object.

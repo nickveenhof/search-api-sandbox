@@ -16,23 +16,22 @@ function search_api_views_data() {
       // Fill in base data.
       $key = 'search_api_index_' . $index->id();
       $table = &$data[$key];
-      $type_info = Drupal\search_api\Utility\Utility::getDataTypeInfo($index->item_type);
-      $table['table']['group'] = t('Indexed @entity_type', array('@entity_type' => $type_info['name']));
+      $table['table']['group'] = t('Index @name', array('@name' => $index->name));
       $table['table']['base'] = array(
         'field' => 'search_api_id',
         'index' => $index->machine_name,
         'title' => $index->name,
         'help' => t('Use the %name search index for filtering and retrieving data.', array('%name' => $index->name)),
-        'query class' => 'search_api_views_query',
+        'query_id' => 'search_api_query',
       );
-      if (isset($entity_types[$index->getEntityType()])) {
+      /*if (isset($entity_types[$index->getEntityTypeId()])) {
         $table['table'] += array(
-          'entity type' => $index->getEntityType(),
+          'entity type' => $index->getEntityTypeId(),
           'skip entity load' => TRUE,
         );
-      }
+      }*/
 
-      try {
+      /*try {
         $wrapper = $index->entityWrapper(NULL, FALSE);
       }
       catch (EntityMetadataWrapperException $e) {
@@ -94,38 +93,45 @@ function search_api_views_data() {
       }
 
       // Special handlers
-      $table['search_api_language']['filter']['handler'] = 'SearchApiViewsHandlerFilterLanguage';
+      $table['search_api_language']['filter']['plugin'] = 'search_api_language';
+      */
 
       $table['search_api_id']['title'] = t('Entity ID');
       $table['search_api_id']['help'] = t("The entity's ID.");
-      $table['search_api_id']['sort']['handler'] = 'SearchApiViewsHandlerSort';
+      $table['search_api_id']['sort']['id'] = 'search_api_sort';
 
+      /*
       $table['search_api_relevance']['group'] = t('Search');
       $table['search_api_relevance']['title'] = t('Relevance');
       $table['search_api_relevance']['help'] = t('The relevance of this search result with respect to the query.');
       $table['search_api_relevance']['field']['type'] = 'decimal';
-      $table['search_api_relevance']['field']['handler'] = 'entity_views_handler_field_numeric';
+      $table['search_api_relevance']['field']['plugin'] = 'entity_views_handler_field_numeric';
       $table['search_api_relevance']['field']['click sortable'] = TRUE;
-      $table['search_api_relevance']['sort']['handler'] = 'SearchApiViewsHandlerSort';
+      $table['search_api_relevance']['sort']['plugin'] = 'search_api_sort';
 
       $table['search_api_excerpt']['group'] = t('Search');
       $table['search_api_excerpt']['title'] = t('Excerpt');
       $table['search_api_excerpt']['help'] = t('The search result excerpted to show found search terms.');
       $table['search_api_excerpt']['field']['type'] = 'text';
       $table['search_api_excerpt']['field']['handler'] = 'entity_views_handler_field_text';
+      */
+
+      $table['search_api_views_fulltext']['help'] = t('Search several or all fulltext fields at once.');
+      $table['search_api_views_fulltext']['filter']['plugin'] = 'search_api_fulltext';
+      $table['search_api_views_fulltext']['argument']['id'] = 'search_api_fulltext';
 
       $table['search_api_views_fulltext']['group'] = t('Search');
       $table['search_api_views_fulltext']['title'] = t('Fulltext search');
       $table['search_api_views_fulltext']['help'] = t('Search several or all fulltext fields at once.');
-      $table['search_api_views_fulltext']['filter']['handler'] = 'SearchApiViewsHandlerFilterFulltext';
-      $table['search_api_views_fulltext']['argument']['handler'] = 'SearchApiViewsHandlerArgumentFulltext';
+      $table['search_api_views_fulltext']['filter']['id'] = 'search_api_fulltext';
+      $table['search_api_views_fulltext']['argument']['id'] = 'search_api_fulltext';
 
       $table['search_api_views_more_like_this']['group'] = t('Search');
       $table['search_api_views_more_like_this']['title'] = t('More like this');
       $table['search_api_views_more_like_this']['help'] = t('Find similar content.');
-      $table['search_api_views_more_like_this']['argument']['handler'] = 'SearchApiViewsHandlerArgumentMoreLikeThis';
+      $table['search_api_views_more_like_this']['argument']['id'] = 'search_api_more_like_this';
 
-      // If there are taxonomy term references indexed in the index, include the
+      /*// If there are taxonomy term references indexed in the index, include the
       // "Indexed taxonomy term fields" contextual filter. We also save for all
       // fields whether they contain only terms of a certain vocabulary, keying
       // that information by vocabulary for later ease of use.
@@ -149,6 +155,7 @@ function search_api_views_data() {
         $table['search_api_views_taxonomy_term']['argument']['handler'] = 'SearchApiViewsHandlerArgumentTaxonomyTerm';
         $table['search_api_views_taxonomy_term']['argument']['vocabulary_fields'] = $vocabulary_fields;
       }
+      */
     }
     return $data;
   }
@@ -252,6 +259,18 @@ function _search_api_views_add_handlers($id, array $field, EntityMetadataWrapper
  * Implements hook_views_plugins_cache_alter().
  */
 function search_api_views_plugins_cache_alter(array &$plugins) {
+  // Collect all base tables provided by this module.
+  $bases = array();
+  foreach (entity_load_multiple('search_api_index') as $index) {
+    $bases[] = 'search_api_index_' . $index->id();
+  }
+  $plugins['search_api']['base'] = $bases;
+}
+
+/**
+ * Implements hook_views_plugins_row_alter().
+ */
+function search_api_views_plugins_row_alter(array &$plugins) {
   // Collect all base tables provided by this module.
   $bases = array();
   foreach (entity_load_multiple('search_api_index') as $index) {

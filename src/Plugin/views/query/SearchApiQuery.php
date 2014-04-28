@@ -11,7 +11,9 @@ use Drupal\Component\Utility\String;
 use Drupal\search_api\Exception;
 use Drupal\search_api\Query\FilterInterface;
 use Drupal\search_api\Query\QueryInterface;
+use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\query\QueryPluginBase;
+use Drupal\views\ViewExecutable;
 
 /**
  * Views query class using a Search API index as the data source.
@@ -102,13 +104,13 @@ class SearchApiQuery extends QueryPluginBase {
   /**
    * Create the basic query object and fill with default values.
    */
-  public function init($base_table, $base_field, $options) {
+  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
     try {
       $this->errors = array();
-      parent::init($base_table, $base_field, $options);
+      parent::init($view, $display, $options);
       $this->fields = array();
-      if (substr($base_table, 0, 17) == 'search_api_index_') {
-        $id = substr($base_table, 17);
+      if (substr($view->storage->get('base_table'), 0, 17) == 'search_api_index_') {
+        $id = substr($view->storage->get('base_table'), 17);
         $this->index = entity_load('search_api_index', $id);
         $this->query = $this->index->query(array(
           'parse mode' => $this->options['parse_mode'],
@@ -118,6 +120,10 @@ class SearchApiQuery extends QueryPluginBase {
     catch (\Exception $e) {
       $this->errors[] = $e->getMessage();
     }
+  }
+
+  public function ensureTable() {
+
   }
 
   /**
@@ -216,7 +222,7 @@ class SearchApiQuery extends QueryPluginBase {
   /**
    * Builds the necessary info to execute the query.
    */
-  public function build(&$view) {
+  public function build(ViewExecutable $view) {
     $this->view = $view;
 
     // Setup the nested filter structure for this query.
@@ -259,11 +265,11 @@ class SearchApiQuery extends QueryPluginBase {
 
     // Initialize the pager and let it modify the query to add limits.
     $view->initPager();
-    $this->pager->query();
+    $view->pager->query();
 
     // Set the search ID, if it was not already set.
     if ($this->query->getOption('search id') == get_class($this->query)) {
-      $this->query->setOption('search id', 'search_api_views:' . $view->name . ':' . $view->current_display);
+      $this->query->setOption('search id', 'search_api_views:' . $view->storage->id() . ':' . $view->current_display);
     }
 
     // Add the "search_api_bypass_access" option to the query, if desired.
@@ -281,7 +287,7 @@ class SearchApiQuery extends QueryPluginBase {
   /**
    * {@inheritdoc}
    */
-  public function alter(&$view) {
+  public function alter(ViewExecutable $view) {
     parent::alter($view);
     \Drupal::moduleHandler()->alter('search_api_views_query', $view, $this);
   }
@@ -293,7 +299,7 @@ class SearchApiQuery extends QueryPluginBase {
    * Values to set: $view->result, $view->total_rows, $view->execute_time,
    * $view->pager['current_page'].
    */
-  public function execute(&$view) {
+  public function execute(ViewExecutable $view) {
     if ($this->errors || $this->abort) {
       if (error_displayable()) {
         foreach ($this->errors as $msg) {
@@ -310,13 +316,13 @@ class SearchApiQuery extends QueryPluginBase {
     // FALSE.
     $skip_result_count = $this->query->getOption('skip result count', TRUE);
     if ($skip_result_count) {
-      $skip_result_count = !$this->pager->useCountQuery() && empty($view->get_total_rows);
+      $skip_result_count = !$view->pager->useCountQuery() && empty($view->get_total_rows);
       $this->query->setOption('skip result count', $skip_result_count);
     }
 
     try {
       // Trigger pager preExecute().
-      $this->pager->preExecute($this->query);
+      $view->pager->preExecute($this->query);
 
       // Views passes sometimes NULL and sometimes the integer 0 for "All" in a
       // pager. If set to 0 items, a string "0" is passed. Therefore, we unset
