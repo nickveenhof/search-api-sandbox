@@ -39,19 +39,32 @@ class TestService extends ServicePluginBase implements ServiceExtraInfoInterface
    * {@inheritdoc}
    */
   public function search(QueryInterface $query) {
-    return array(
-      'result count' => 1,
-      'results' => array(
-        1 => array(
-          'id' => 1,
-          'score' => 1,
+    if ($query->getKeys() && $query->getKeys()[0] == 'test') {
+      return array(
+        'result count' => 1,
+        'results' => array(
+          1 => array(
+            'id' => 1,
+            'score' => 1,
+          ),
         ),
-        2 => array(
-          'id' => 2,
-          'score' => 1,
+      );
+    }
+    else {
+      return array(
+        'result count' => 2,
+        'results' => array(
+          1 => array(
+            'id' => 1,
+            'score' => 1,
+          ),
+          2 => array(
+            'id' => 2,
+            'score' => 1,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   /**
