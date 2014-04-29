@@ -406,7 +406,8 @@ class SearchApiQuery extends QueryPluginBase {
 
     // First off, we try to gather as much field values as possible without
     // loading any items.
-    foreach ($results as $id => $result) {
+    foreach ($results as $result) {
+      $id = $result['id'];
       if (!empty($this->options['entity_access'])) {
         $entity = entity_load($this->index->item_type, $id);
         if (!$entity[$id]->access('view')) {
