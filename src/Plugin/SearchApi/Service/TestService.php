@@ -54,32 +54,33 @@ class TestService extends ServicePluginBase {
    */
   public function search(QueryInterface $query) {
     $results = array();
+    $datasource = key($query->getIndex()->getDatasources());
     if ($query->getKeys() && $query->getKeys()[0] == 'test') {
-      $results['results'][1] = array(
+      $results['results'][$datasource . IndexInterface::DATASOURCE_ID_SEPARATOR . '1'] = array(
         'id' => 1,
         'score' => 2,
-        'datasource' => key($query->getIndex()->getDatasources()),
+        'datasource' => $datasource,
         'excerpt' => 'test',
       );
     }
     elseif ($query->getOption('search_api_mlt')) {
-      $results['results'][2] = array(
+      $results['results'][$datasource . IndexInterface::DATASOURCE_ID_SEPARATOR . '2'] = array(
         'id' => 2,
         'score' => 2,
-        'datasource' => key($query->getIndex()->getDatasources()),
+        'datasource' => $datasource,
         'excerpt' => 'test test',
       );
     }
     else {
-      $results['results'][1] = array(
+      $results['results'][$datasource . IndexInterface::DATASOURCE_ID_SEPARATOR . '1'] = array(
         'id' => 1,
         'score' => 1,
-        'datasource' => key($query->getIndex()->getDatasources()),
+        'datasource' => $datasource,
       );
-      $results['results'][2] = array(
+      $results['results'][$datasource . IndexInterface::DATASOURCE_ID_SEPARATOR . '2'] = array(
         'id' => 2,
         'score' => 1,
-        'datasource' => key($query->getIndex()->getDatasources()),
+        'datasource' => $datasource,
       );
     }
     $results['result count'] = count($results['results']);

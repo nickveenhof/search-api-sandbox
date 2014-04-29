@@ -12,6 +12,7 @@ use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\Core\Render\Element;
+use Drupal\search_api\Datasource\DatasourcePluginBase;
 use Drupal\search_api\Exception\SearchApiException;
 use Drupal\search_api\Index\IndexInterface;
 use Drupal\search_api\Query\FilterInterface;
@@ -1150,8 +1151,10 @@ class SearchApiDbService extends ServicePluginBase {
       $time_queries_done = microtime(TRUE);
 
       foreach ($result as $row) {
+        list($datasource, $id) = explode(IndexInterface::DATASOURCE_ID_SEPARATOR, $row->item_id);
         $results['results'][$row->item_id] = array(
-          'id' => $row->item_id,
+          'id' => $id,
+          'datasource' => $datasource,
           'score' => $row->score / self::SCORE_MULTIPLIER,
         );
       }

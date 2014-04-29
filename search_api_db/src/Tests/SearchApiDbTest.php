@@ -272,6 +272,11 @@ class SearchApiDbTest extends EntityUnitTestBase {
     $this->assertEqual($results['ignored'], array(), 'No keys were ignored.');
     $this->assertEqual($results['warnings'], array(), 'No warnings were displayed.');
 
+    $ids = $this->getItemIds(array(1));
+    $id = reset($ids);
+    $this->assertEqual($results['results'][$id]['id'], 1);
+    $this->assertEqual($results['results'][$id]['datasource'], 'entity:entity_test');
+
     $results = $this->buildSearch('"test foo"')->execute();
     $this->assertEqual($results['result count'], 3, 'Search for »"test foo"« returned correct number of results.');
     $this->assertEqual(array_keys($results['results']), $this->getItemIds(array(2, 4, 1)), 'Search for »"test foo"« returned correct result.');
