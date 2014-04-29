@@ -101,14 +101,13 @@ function search_api_views_data() {
       $table['search_api_id']['field']['id'] = 'numeric';
       $table['search_api_id']['sort']['id'] = 'search_api_sort';
 
-
       $table['search_api_relevance']['group'] = t('Search');
       $table['search_api_relevance']['title'] = t('Relevance');
       $table['search_api_relevance']['help'] = t('The relevance of this search result with respect to the query.');
       $table['search_api_relevance']['field']['type'] = 'decimal';
       $table['search_api_relevance']['field']['id'] = 'numeric';
       $table['search_api_relevance']['field']['click sortable'] = TRUE;
-      $table['search_api_relevance']['sort']['plugin'] = 'search_api_sort';
+      $table['search_api_relevance']['sort']['id'] = 'search_api_sort';
 
       $table['search_api_excerpt']['group'] = t('Search');
       $table['search_api_excerpt']['title'] = t('Excerpt');

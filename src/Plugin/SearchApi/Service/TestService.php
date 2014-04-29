@@ -43,6 +43,7 @@ class TestService extends ServicePluginBase implements ServiceExtraInfoInterface
         'id' => 1,
         'score' => 2,
         'datasource' => key($query->getIndex()->getDatasources()),
+        'excerpt' => 'test',
       );
     }
     elseif ($query->getOption('search_api_mlt')) {
@@ -50,6 +51,7 @@ class TestService extends ServicePluginBase implements ServiceExtraInfoInterface
         'id' => 2,
         'score' => 2,
         'datasource' => key($query->getIndex()->getDatasources()),
+        'excerpt' => 'test test',
       );
     }
     else {

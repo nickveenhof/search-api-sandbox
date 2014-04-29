@@ -128,16 +128,28 @@ class SearchApiQuery extends QueryPluginBase {
   }
 
   /**
-   * Add a field that should be retrieved from the results by this view.
+   * Add a field to the query table, possibly with an alias. This will
+   * automatically call ensureTable to make sure the required table
+   * exists, *unless* $table is unset.
    *
+   * @param $table
+   *   The table this field is attached to. If NULL, it is assumed this will
+   *   be a formula; otherwise, ensureTable is used to make sure the
+   *   table exists.
    * @param $field
-   *   The field's identifier, as used by the Search API. E.g., "title" for a
-   *   node's title, "author:name" for a node's author's name.
+   *   The name of the field to add. This may be a real field or a formula.
+   * @param $alias
+   *   The alias to create. If not specified, the alias will be $table_$field
+   *   unless $table is NULL. When adding formulae, it is recommended that an
+   *   alias be used.
+   * @param $params
+   *   An array of parameters additional to the field that will control items
+   *   such as aggregation functions and DISTINCT.
    *
-   * @return SearchApiQuery
-   *   The called object.
+   * @return $name
+   *   The name that this field can be referred to as. Usually this is the alias.
    */
-  public function addField($field) {
+  public function addField($table, $field, $alias = '', $params = array()) {
     $this->fields[$field] = TRUE;
     return $field;
   }
@@ -402,30 +414,31 @@ class SearchApiQuery extends QueryPluginBase {
         }
       }
 
+      $values['search_api_id'] = $id;
 
       // Include the loaded item for this result row, if present, or the item
       // ID.
       if (!empty($result['_entity'])) {
-        $row['_entity'] = $result['_entity'];
+        $values['_entity'] = $result['_entity'];
       }
       else {
-        $row['_entity'] = $id;
+        $values['_entity'] = $id;
       }
 
-      $row['_entity_properties']['search_api_relevance'] = $result['score'];
-      $row['_entity_properties']['search_api_excerpt'] = empty($result['excerpt']) ? '' : $result['excerpt'];
+      $values['search_api_relevance'] = $result['score'];
+      $values['search_api_excerpt'] = empty($result['excerpt']) ? '' : $result['excerpt'];
 
       // Gather any fields from the search results.
       if (!empty($result['fields'])) {
-        $row['_entity_properties'] += $result['fields'];
+        $values += $result['fields'];
       }
 
       // Check whether we need to extract any properties from the result item.
-      $missing_fields = array_diff_key($this->fields, $row);
+      $missing_fields = array_diff_key($this->fields, $values);
       if ($missing_fields) {
         $missing[$id] = $missing_fields;
-        if (is_object($row['_entity'])) {
-          $items[$id] = $row['_entity'];
+        if (is_object($values['_entity'])) {
+          $items[$id] = $values['_entity'];
         }
         else {
           $ids[] = $id;
@@ -433,7 +446,7 @@ class SearchApiQuery extends QueryPluginBase {
       }
 
       // Save the row values for adding them to the Views result afterwards.
-      $rows[$id] = new ResultRow($row);
+      $rows[$id] = new ResultRow($values);
     }
 
     // Load items of those rows which haven't got all field values, yet.
