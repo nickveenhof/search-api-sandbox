@@ -17,7 +17,6 @@ use Drupal\search_api\Index\IndexInterface;
 use Drupal\search_api\Query\FilterInterface;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api\Service\ServicePluginBase;
-use Drupal\search_api\Service\ServiceExtraInfoInterface;
 use Drupal\search_api\Utility\Utility;
 
 /**
@@ -27,7 +26,7 @@ use Drupal\search_api\Utility\Utility;
  *   description = @Translation("Index items using multiple database tables, for simple searches.")
  * )
  */
-class SearchApiDbService extends ServicePluginBase implements ServiceExtraInfoInterface {
+class SearchApiDbService extends ServicePluginBase {
 
   /**
    * Multiplier for scores to have precision when converted from float to int.
@@ -208,19 +207,21 @@ class SearchApiDbService extends ServicePluginBase implements ServiceExtraInfoIn
    */
   public function addIndex(IndexInterface $index) {
     try {
+      // Create the denormalized table now.
       $index_table = $this->findFreeTable('search_api_db_', $index->id());
+      $this->createFieldTable(array(), array('table' => $index_table), TRUE);
 
       // If there are no fields, we can take a shortcut.
       if (!$index->getFields()) {
         if (!isset($this->configuration['field_tables'][$index->id()])) {
           $this->configuration['field_tables'][$index->id()] = array();
-          $this->configuration['index_tables'][$index->id()] = NULL;
+          $this->configuration['index_tables'][$index->id()] = $index_table;
           $this->server->save();
         }
         elseif ($this->configuration['field_tables'][$index->id()]) {
           $this->removeIndex($index);
           $this->configuration['field_tables'][$index->id()] = array();
-          $this->configuration['index_tables'][$index->id()] = NULL;
+          $this->configuration['index_tables'][$index->id()] = $index_table;
           $this->server->save();
         }
         return;
@@ -324,8 +325,11 @@ class SearchApiDbService extends ServicePluginBase implements ServiceExtraInfoIn
    *   - table: The table to use for the field.
    *   - column: (optional) The column to use in that table. Defaults to
    *     "value".
+   * @param bool $initial_table_only
+   *   (optional) If TRUE, we create a table with just the 'item_id' column.
+   *   Defaults to FALSE.
    */
-  protected function createFieldTable($field, $db) {
+  protected function createFieldTable($field, $db, $initial_table_only = FALSE) {
     $new_table = !$this->database->schema()->tableExists($db['table']);
     if ($new_table) {
       $table = array(
@@ -355,6 +359,11 @@ class SearchApiDbService extends ServicePluginBase implements ServiceExtraInfoIn
         case 'sqlsrv':
           break;
       }
+    }
+
+    // Stop here if we want to create a table with just the 'item_id' column.
+    if ($initial_table_only) {
+      return;
     }
 
     if (!isset($db['column'])) {
@@ -1235,18 +1244,8 @@ class SearchApiDbService extends ServicePluginBase implements ServiceExtraInfoIn
       $this->warnings[$msg] = 1;
     }
 
-    // Since the 'search_api_language' field might not be always available
-    // anymore, try to use the first field and throw an exception if no field is
-    // defined.
-    // @todo Any other ideas about what to do here? A better exception message
-    // would be a start :)
-    if (empty($fields)) {
-      throw new SearchApiException(t('Unknown field @field specified as search target.', array('@field' => $name)));
-    }
-
     if (!isset($db_query)) {
-      $field = reset($fields);
-      $db_query = $this->database->select($field['table'], 't');
+      $db_query = $this->database->select($this->configuration['index_tables'][$query->getIndex()->id()], 't');
       $db_query->addField('t', 'item_id', 'item_id');
       $db_query->addExpression(':score', 'score', array(':score' => self::SCORE_MULTIPLIER));
       $db_query->distinct();
@@ -1945,26 +1944,6 @@ class SearchApiDbService extends ServicePluginBase implements ServiceExtraInfoIn
       }
     }
     return $fields;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getExtraInformation() {
-    return array(
-      array(
-        'label' => '',
-        'info' => $this->t('All field types are supported and indexed in a special way, with URI/String and Integer/Duration being equivalent.'),
-      ),
-      array(
-        'label' => '',
-        'info' => $this->t('The "direct" parse mode results in the keys being normally split around white-space, only preprocessing might differ.'),
-      ),
-      array(
-        'label' => '',
-        'info' => $this->t('Currently, phrase queries are not supported.'),
-      ),
-    );
   }
 
 }
