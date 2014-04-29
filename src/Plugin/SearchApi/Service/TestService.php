@@ -39,32 +39,31 @@ class TestService extends ServicePluginBase implements ServiceExtraInfoInterface
    * {@inheritdoc}
    */
   public function search(QueryInterface $query) {
+    $results = array();
     if ($query->getKeys() && $query->getKeys()[0] == 'test') {
-      return array(
-        'result count' => 1,
-        'results' => array(
-          1 => array(
-            'id' => 1,
-            'score' => 1,
-          ),
-        ),
+      $results['results'][1] = array(
+        'id' => 1,
+        'score' => 2,
+      );
+    }
+    elseif ($query->getOption('search_api_mlt')) {
+      $results['results'][2] = array(
+        'id' => 2,
+        'score' => 2,
       );
     }
     else {
-      return array(
-        'result count' => 2,
-        'results' => array(
-          1 => array(
-            'id' => 1,
-            'score' => 1,
-          ),
-          2 => array(
-            'id' => 2,
-            'score' => 1,
-          ),
-        ),
+      $results['results'][1] = array(
+        'id' => 1,
+        'score' => 1,
+      );
+      $results['results'][2] = array(
+        'id' => 2,
+        'score' => 1,
       );
     }
+    $results['result count'] = count($results['results']);
+    return $results;
   }
 
   /**
@@ -82,6 +81,16 @@ class TestService extends ServicePluginBase implements ServiceExtraInfoInterface
         'info' => 'Dummy Value 2',
       ),
     );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function supportsFeature($feature) {
+    if ($feature == 'search_api_mlt') {
+      return TRUE;
+    }
+    return parent::supportsFeature($feature);
   }
 
 }

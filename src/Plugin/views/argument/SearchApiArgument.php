@@ -55,23 +55,23 @@ class SearchApiArgument extends ArgumentPluginBase {
     $defaults = array(
       'ignore' => array(
         'title' => t('Display all values'),
-        'method' => 'default_ignore',
+        'method' => 'defaultIgnore',
         'breadcrumb' => TRUE, // generate a breadcrumb to here
       ),
       'not found' => array(
         'title' => t('Hide view / Page not found (404)'),
-        'method' => 'default_not_found',
+        'method' => 'defaultNotFound',
         'hard fail' => TRUE, // This is a hard fail condition
       ),
       'empty' => array(
         'title' => t('Display empty text'),
-        'method' => 'default_empty',
+        'method' => 'defaultEmpty',
         'breadcrumb' => TRUE, // generate a breadcrumb to here
       ),
       'default' => array(
         'title' => t('Provide default argument'),
         'method' => 'default_default',
-        'form method' => 'default_argument_form',
+        'form method' => 'defaultArgumentForm',
         'has default argument' => TRUE,
         'default only' => TRUE, // this can only be used for missing argument, not validation failure
       ),
@@ -106,7 +106,7 @@ class SearchApiArgument extends ArgumentPluginBase {
       '#type' => 'checkbox',
       '#title' => t('Allow multiple values'),
       '#description' => t('If selected, users can enter multiple values in the form of 1+2+3 (for OR) or 1,2,3 (for AND).'),
-      '#default_value' => $this->options['break_phrase'],
+      '#default_value' => !empty($this->options['break_phrase']),
       '#fieldset' => 'more',
     );
 
