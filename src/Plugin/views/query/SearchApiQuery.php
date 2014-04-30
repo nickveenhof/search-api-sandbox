@@ -9,6 +9,7 @@ namespace Drupal\search_api\Plugin\views\query;
 
 use Drupal\Component\Utility\String;
 use Drupal\search_api\Exception;
+use Drupal\search_api\Index\IndexInterface;
 use Drupal\search_api\Query\FilterInterface;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
@@ -406,24 +407,25 @@ class SearchApiQuery extends QueryPluginBase {
 
     // First off, we try to gather as much field values as possible without
     // loading any items.
-    foreach ($results as $result) {
+    foreach ($results as $key => $result) {
       $id = $result['id'];
-      if (!empty($this->options['entity_access'])) {
+      /*if (!empty($this->options['entity_access'])) {
         $entity = entity_load($this->index->item_type, $id);
         if (!$entity[$id]->access('view')) {
           continue;
         }
-      }
+      }*/
 
       $values['search_api_id'] = $id;
+      $values['search_api_datasource'] = $result['datasource'];
 
       // Include the loaded item for this result row, if present, or the item
       // ID.
-      if (!empty($result['_entity'])) {
-        $values['_entity'] = $result['_entity'];
+      if (!empty($result['_item'])) {
+        $values['_item'] = $result['_item'];
       }
       else {
-        $values['_entity'] = $id;
+        $values['_item'] = $id;
       }
 
       $values['search_api_relevance'] = $result['score'];
@@ -437,31 +439,29 @@ class SearchApiQuery extends QueryPluginBase {
       // Check whether we need to extract any properties from the result item.
       $missing_fields = array_diff_key($this->fields, $values);
       if ($missing_fields) {
-        $missing[$id] = $missing_fields;
-        if (is_object($values['_entity'])) {
-          $items[$id] = $values['_entity'];
+        $missing[$result['datasource']][$id] = $missing_fields;
+        if (is_object($values['_item'])) {
+          $items[$id] = $values['_item'];
         }
         else {
-          $ids[] = $id;
+          $item_ids[] = $key;
         }
       }
 
       // Save the row values for adding them to the Views result afterwards.
-      $rows[$id] = new ResultRow($values);
+      $rows[$key] = new ResultRow($values);
     }
 
     // Load items of those rows which haven't got all field values, yet.
-    if (!empty($ids)) {
-      $datasource = $this->index->getDatasources();
-      $datasource = reset($datasource);
-      $items += $datasource->loadMultiple($ids);
-      // $items now includes loaded items, and those already passed in the
-      // search results.
-      foreach ($items as $id => $item) {
-        // Extract item properties.
-        //$wrapper = $this->index->entityWrapper($item, FALSE);
-        //$rows[$id]->_entity_properties += $this->extractFields($wrapper, $missing[$id]);
-        $rows[$id]->_entity = $item;
+    if (!empty($item_ids)) {
+      // Load the items and assign them to the rows.
+      foreach ($this->index->loadItemsMultiple($item_ids) as $datasource_id => $items) {
+        foreach ($items as $key => $item) {
+          // Extract item properties.
+          //$wrapper = $this->index->entityWrapper($item, FALSE);
+          //$rows[$id]->_entity_properties += $this->extractFields($wrapper, $missing[$id]);
+          $rows[$key]->_item = $item;
+        }
       }
     }
 

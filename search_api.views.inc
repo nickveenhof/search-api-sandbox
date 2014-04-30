@@ -101,6 +101,11 @@ function search_api_views_data() {
       $table['search_api_id']['field']['id'] = 'numeric';
       $table['search_api_id']['sort']['id'] = 'search_api_sort';
 
+      $table['search_api_datasource']['title'] = t('Datasource');
+      $table['search_api_datasource']['help'] = t("The data source ID.");
+      $table['search_api_datasource']['field']['id'] = 'standard';
+      $table['search_api_datasource']['sort']['id'] = 'search_api_sort';
+
       $table['search_api_relevance']['group'] = t('Search');
       $table['search_api_relevance']['title'] = t('Relevance');
       $table['search_api_relevance']['help'] = t('The relevance of this search result with respect to the query.');
@@ -114,16 +119,16 @@ function search_api_views_data() {
       $table['search_api_excerpt']['help'] = t('The search result excerpted to show found search terms.');
       $table['search_api_excerpt']['field']['id'] = 'standard';
 
-      $table['search_api_views_fulltext']['group'] = t('Search');
-      $table['search_api_views_fulltext']['title'] = t('Fulltext search');
-      $table['search_api_views_fulltext']['help'] = t('Search several or all fulltext fields at once.');
-      $table['search_api_views_fulltext']['filter']['id'] = 'search_api_fulltext';
-      $table['search_api_views_fulltext']['argument']['id'] = 'search_api_fulltext';
+      $table['search_api_fulltext']['group'] = t('Search');
+      $table['search_api_fulltext']['title'] = t('Fulltext search');
+      $table['search_api_fulltext']['help'] = t('Search several or all fulltext fields at once.');
+      $table['search_api_fulltext']['filter']['id'] = 'search_api_fulltext';
+      $table['search_api_fulltext']['argument']['id'] = 'search_api_fulltext';
 
-      $table['search_api_views_more_like_this']['group'] = t('Search');
-      $table['search_api_views_more_like_this']['title'] = t('More like this');
-      $table['search_api_views_more_like_this']['help'] = t('Find similar content.');
-      $table['search_api_views_more_like_this']['argument']['id'] = 'search_api_more_like_this';
+      $table['search_api_more_like_this']['group'] = t('Search');
+      $table['search_api_more_like_this']['title'] = t('More like this');
+      $table['search_api_more_like_this']['help'] = t('Find similar content.');
+      $table['search_api_more_like_this']['argument']['id'] = 'search_api_more_like_this';
 
       /*// If there are taxonomy term references indexed in the index, include the
       // "Indexed taxonomy term fields" contextual filter. We also save for all
