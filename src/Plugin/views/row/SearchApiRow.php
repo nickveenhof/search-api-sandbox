@@ -124,7 +124,7 @@ class SearchApiRow extends RowPluginBase {
    * {@inheritdoc}
    */
   public function render($row) {
-    $view_mode = $this->options['view_mode'][$row->search_api_datasource];
+    $view_mode = isset($this->options['view_mode'][$row->search_api_datasource]) ? $this->options['view_mode'][$row->search_api_datasource] : 'default';
     return $this->index->getDataSource($row->search_api_datasource)->viewItem($row->_item, $view_mode);
   }
 
