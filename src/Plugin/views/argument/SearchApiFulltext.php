@@ -12,6 +12,7 @@ namespace Drupal\search_api\Plugin\views\argument;
  *
  * @ViewsArgument("search_api_fulltext")
  */
+
 class SearchApiFulltext extends SearchApiArgument {
 
   /**
