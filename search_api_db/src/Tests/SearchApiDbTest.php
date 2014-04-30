@@ -262,7 +262,7 @@ class SearchApiDbTest extends EntityUnitTestBase {
     $this->assertEqual($results['ignored'], array(), 'No keys were ignored.');
     $this->assertEqual($results['warnings'], array(), 'No warnings were displayed.');
 
-    $ids = $this->getItemId(array(1));
+    $ids = $this->getItemIds(array(1));
     $id = reset($ids);
     $this->assertEqual($results['results'][$id]['id'], 1);
     $this->assertEqual($results['results'][$id]['datasource'], 'entity:entity_test');
