@@ -20,7 +20,7 @@ function search_api_views_data() {
       $table['table']['base'] = array(
         'field' => 'search_api_id',
         'index' => $index->machine_name,
-        'title' => $index->name,
+        'title' => t('Index @name', array('@name' => $index->name)),
         'help' => t('Use the %name search index for filtering and retrieving data.', array('%name' => $index->name)),
         'query_id' => 'search_api_query',
       );

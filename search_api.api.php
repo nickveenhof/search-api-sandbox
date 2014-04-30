@@ -4,7 +4,6 @@
  * @file
  * Hooks provided by the Search API module.
  */
-use Drupal\search_api\Query\QueryInterface;
 
 /**
  * @addtogroup hooks
@@ -329,7 +328,7 @@ function hook_search_api_index_reindex(\Drupal\search_api\Index\IndexInterface $
  *
  * @see hook_views_query_alter()
  */
-function hook_search_api_views_query_alter(\Drupal\views\Entity\View &$view, QueryInterface &$query) {
+function hook_search_api_views_query_alter(\Drupal\views\Entity\View &$view, Drupal\search_api\Query\QueryInterface &$query) {
   // (Example assuming a view with an exposed filter on node title.)
   // If the input for the title filter is a positive integer, filter against
   // node ID instead of node title.
