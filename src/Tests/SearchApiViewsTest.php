@@ -45,8 +45,26 @@ class SearchApiViewsTest extends SearchApiWebTestBase {
     $this->insertExampleContent();
     $this->createServer();
     $this->createIndex();
+    $this->indexItems();
 
     $this->drupalGet('search-api-test-fulltext');
+    // By default, it should show all entities.
+    foreach ($this->entities as $entity) {
+      $this->assertText($entity->label());
+    }
+
+    // Search for something.
+    $this->drupalGet('search-api-test-fulltext', array('query' => array('search_api_fulltext' => 'foobar')));
+
+    // Now it should only find two entities.
+    foreach ($this->entities as $id => $entity) {
+      if ($id == 3) {
+        $this->assertText($entity->label());
+      }
+      else {
+        $this->assertNoText($entity->label());
+      }
+    }
   }
 
 }

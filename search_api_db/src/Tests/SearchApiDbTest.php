@@ -119,12 +119,6 @@ class SearchApiDbTest extends EntityUnitTestBase {
     $this->assertEqual($results['warnings'], array(), 'No warnings were displayed.');
   }
 
-  protected function indexItems() {
-    /** @var \Drupal\search_api\Index\IndexInterface $index */
-    $index = entity_load('search_api_index', $this->indexId);
-    $index->index();
-  }
-
   protected function searchSuccess1() {
     $results = $this->buildSearch('test')->range(1, 2)->execute();
     $this->assertEqual($results['result count'], 4, 'Search for »test« returned correct number of results.');

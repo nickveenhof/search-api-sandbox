@@ -32,7 +32,7 @@ display:
       exposed_form:
         type: basic
         options:
-          submit_button: Apply
+          submit_button: Search
           reset_button: false
           reset_button_label: Reset
           exposed_sorts_label: 'Sort by'
@@ -68,11 +68,10 @@ display:
         type: search_api
         options:
           view_mode:
-            'entity:aggregator_item': default
-            'entity:node': teaser
+            'entity:entity_test': default
       fields:
         search_api_id:
-          table: search_api_index_drupal_planet
+          table: search_api_index_test_index
           field: search_api_id
           id: search_api_id
           plugin_id: numeric
@@ -134,7 +133,7 @@ display:
       filters:
         search_api_fulltext:
           id: search_api_fulltext
-          table: search_api_index_drupal_planet
+          table: search_api_index_test_index
           field: search_api_fulltext
           relationship: none
           group_type: group
@@ -178,7 +177,7 @@ display:
           plugin_id: search_api_fulltext
           provider: search_api
       sorts: {  }
-      title: 'Drupal Planet'
+      title: 'Fulltext test index'
       header: {  }
       footer: {  }
       empty: {  }

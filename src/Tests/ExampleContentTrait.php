@@ -28,6 +28,8 @@ trait ExampleContentTrait {
    */
   protected $indexId;
 
+  protected $entities = array();
+
   /**
    * Sets up the necessary bundles and fields.
    */
@@ -82,40 +84,45 @@ trait ExampleContentTrait {
   protected function insertExampleContent() {
     $count = \Drupal::entityQuery('entity_test')->count()->execute();
 
-    entity_create('entity_test', array(
+    $this->entities[1] = entity_create('entity_test', array(
         'id' => 1,
         'name' => 'foo bar baz',
         'body' => 'test test',
         'type' => 'item',
         'keywords' => array('orange'),
-      ))->save();
-    entity_create('entity_test', array(
+      ));
+    $this->entities[1]->save();
+    $this->entities[2] = entity_create('entity_test', array(
         'id' => 2,
         'name' => 'foo test',
         'body' => 'bar test',
         'type' => 'item',
         'keywords' => array('orange', 'apple', 'grape'),
-      ))->save();
-    entity_create('entity_test', array(
+      ));
+    $this->entities[2]->save();
+    $this->entities[3] = entity_create('entity_test', array(
         'id' => 3,
         'name' => 'bar',
         'body' => 'test foobar',
         'type' => 'item',
-      ))->save();
-    entity_create('entity_test', array(
+      ));
+    $this->entities[3]->save();
+    $this->entities[4] = entity_create('entity_test', array(
         'id' => 4,
         'name' => 'foo baz',
         'body' => 'test test test',
         'type' => 'article',
         'keywords' => array('apple', 'strawberry', 'grape'),
-      ))->save();
-    entity_create('entity_test', array(
+      ));
+    $this->entities[4]->save();
+    $this->entities[5] = entity_create('entity_test', array(
         'id' => 5,
         'name' => 'bar baz',
         'body' => 'foo',
         'type' => 'article',
         'keywords' => array('orange', 'strawberry', 'grape', 'banana'),
-      ))->save();
+      ));
+    $this->entities[5]->save();
     $count = \Drupal::entityQuery('entity_test')->count()->execute() - $count;
     $this->assertEqual($count, 5, "$count items inserted.");
   }
@@ -177,6 +184,12 @@ trait ExampleContentTrait {
     $this->assertTrue($success, 'The index was successfully created.');
     $this->assertEqual($index->getTracker()->getTotalItemsCount(), 5, 'Correct item count.');
     $this->assertEqual($index->getTracker()->getIndexedItemsCount(), 0, 'All items still need to be indexed.');
+  }
+
+  protected function indexItems() {
+    /** @var \Drupal\search_api\Index\IndexInterface $index */
+    $index = entity_load('search_api_index', $this->indexId);
+    $index->index();
   }
 
   /**
