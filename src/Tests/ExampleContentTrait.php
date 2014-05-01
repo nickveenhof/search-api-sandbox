@@ -6,6 +6,7 @@
 namespace Drupal\search_api\Tests;
 
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\Core\Language\Language;
 use Drupal\search_api\Index\IndexInterface;
 
 /**
@@ -202,7 +203,7 @@ trait ExampleContentTrait {
    */
   protected function getItemIds(array $entity_ids) {
     return array_map(function ($entity_id) {
-        return 'entity:entity_test' . IndexInterface::DATASOURCE_ID_SEPARATOR . $entity_id;
+        return 'entity:entity_test' . IndexInterface::DATASOURCE_ID_SEPARATOR . $entity_id . ':' . Language::LANGCODE_NOT_SPECIFIED;
       }, $entity_ids);
   }
 

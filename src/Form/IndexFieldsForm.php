@@ -232,15 +232,6 @@ class IndexFieldsForm extends EntityForm {
       foreach ($fulltext_types[$level] as $type) {
         $build['fields'][$key]['boost']['#states']['visible'][$css_key . '-type'][] = array('value' => $type);
       }
-      if ($key == 'search_api_language') {
-        // Is treated specially to always index the language.
-        $build['fields'][$key]['type']['#default_value'] = 'string';
-        $build['fields'][$key]['type']['#disabled'] = TRUE;
-        $build['fields'][$key]['boost']['#default_value'] = '1.0';
-        $build['fields'][$key]['boost']['#disabled'] = TRUE;
-        $build['fields'][$key]['indexed']['#default_value'] = 1;
-        $build['fields'][$key]['indexed']['#disabled'] = TRUE;
-      }
     }
 
     if ($additional) {
@@ -308,7 +299,7 @@ class IndexFieldsForm extends EntityForm {
     // Store the fields info
     if (!empty($options['fields'])) {
       $existing_fields = $this->getDatasourceFields($options['fields'], $this->datasourceId);
-      $options['fields'] = array_diff_key($options['fields'], $existing_fields);
+      $options['fields'] = array_diff_key($existing_fields, $options['fields']);
       $fields += $options['fields'];
     }
     $options['fields'] = $fields;
@@ -318,7 +309,7 @@ class IndexFieldsForm extends EntityForm {
       $additional = $form_state['values']['additional']['field'];
       if (!empty($options['additional fields'])) {
         $existing_additional_fields = $this->getDatasourceFields($options['additional fields'], $this->datasourceId);
-        $options['additional fields'] = array_diff_key($options['additional fields'], $existing_additional_fields);
+        $options['additional fields'] = array_diff_key($existing_additional_fields, $options['additional fields']);
         $additional += $options['additional fields'];
       }
       $options['additional fields'] = $additional;

@@ -61,9 +61,31 @@ interface DatasourceInterface extends IndexPluginInterface {
   public function loadMultiple(array $ids);
 
   /**
+   * Retrieves the unique ID of an item.
+   *
+   * @param \Drupal\Core\TypedData\ComplexDataInterface $item
+   *   An item of this controller's type.
+   *
+   * @return string
+   *   The datasource-internal, unique ID of the item.
+   */
+  public function getItemId(ComplexDataInterface $item);
+
+  /**
+   * Retrieves a human-readable label for an item.
+   *
+   * @param \Drupal\Core\TypedData\ComplexDataInterface $item
+   *   An item of this controller's type.
+   *
+   * @return string|null
+   *   Either a human-readable label for the item, or NULL if none is available.
+   */
+  public function getItemLabel(ComplexDataInterface $item);
+
+  /**
    * Retrieves a URL at which the item can be viewed on the web.
    *
-   * @param mixed $item
+   * @param \Drupal\Core\TypedData\ComplexDataInterface $item
    *   An item of this DataSource's type.
    *
    * @return array|null
@@ -72,7 +94,7 @@ interface DatasourceInterface extends IndexPluginInterface {
    *   item has no URL of its own.
    *
    */
-  public function getItemUrl($item);
+  public function getItemUrl(ComplexDataInterface $item);
 
   /**
    * Returns view mode info for this item type.
@@ -121,7 +143,15 @@ interface DatasourceInterface extends IndexPluginInterface {
   public function viewMultipleItems(array $items, $view_mode, $langcode = NULL);
 
   /**
-   * Returns item ids from this datasource.
+   * Gets the entity type id.
+   *
+   * @return string|null
+   *   Entity type id if the data source contains entities.
+   *
+   */
+  public function getEntityTypeId();
+
+  /** Returns item ids from this datasource.
    *
    * Returns all items IDs by default. Allows for simple paging by passing
    * along a limit and a pointer from where it should start.
@@ -133,7 +163,8 @@ interface DatasourceInterface extends IndexPluginInterface {
    *
    * @return array
    *   An array with item identifiers
+   *
+   * @todo Change to single $page parameter.
    */
   public function getItemIds($limit = -1, $from = NULL);
-
 }

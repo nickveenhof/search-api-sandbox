@@ -8,6 +8,7 @@
 namespace Drupal\search_api_db\Tests;
 
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\Core\Language\Language;
 use Drupal\search_api\Index\IndexInterface;
 use Drupal\search_api\Tests\ExampleContentTrait;
 use Drupal\system\Tests\Entity\EntityUnitTestBase;
