@@ -7,6 +7,7 @@
 
 namespace Drupal\search_api\Batch;
 
+use Drupal\search_api\Exception\SearchApiException;
 use Drupal\search_api\Index\IndexInterface;
 
 /**
@@ -53,7 +54,7 @@ class IndexBatchHelper {
   }
 
   /**
-   * Create a batch for a given search index.
+   * Creates a batch for a given search index.
    *
    * @param \Drupal\search_api\Index\IndexInterface $index
    *   An instance of IndexInterface.
@@ -63,6 +64,9 @@ class IndexBatchHelper {
    * @param int $limit
    *   Optional. Maximum number of items to index. Defaults to indexing all
    *   remaining items.
+   *
+   * @return boolean
+   *   TRUE if the batch is created successfully, FALSE otherwise.
    */
   public static function create(IndexInterface $index, $size = NULL, $limit = -1) {
     // Check if the size should be determined by the index cron limit option.
@@ -82,14 +86,19 @@ class IndexBatchHelper {
       );
       // Schedule the batch.
       batch_set($batch_definition);
-
-      return TRUE;
     }
-    return FALSE;
+    else {
+      $args = array(
+        '%size' => $size,
+        '%limit' => $limit,
+        '%name' => $index->label(),
+      );
+      throw new SearchApiException(static::t('Failed to create a batch of size %size and a limit of %limit items for index %name', $args));
+    }
   }
 
   /**
-   * Process an index batch operation.
+   * Processes an index batch operation.
    */
   public static function process(IndexInterface $index, $size, $limit, array &$context) {
     // Check if the sandbox should be initialized.
@@ -153,7 +162,7 @@ class IndexBatchHelper {
   }
 
   /**
-   * Finish an index batch.
+   * Finishes an index batch.
    */
   public static function finish($success, $results, $operations) {
     // Check if the batch job was successful.
