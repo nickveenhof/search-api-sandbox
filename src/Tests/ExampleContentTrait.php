@@ -127,65 +127,6 @@ trait ExampleContentTrait {
     $this->assertEqual($count, 5, "$count items inserted.");
   }
 
-  protected function createServer() {
-    $this->serverId = 'database_search_server';
-    $values = array(
-      'name' => 'Database search server',
-      'machine_name' => $this->serverId,
-      'status' => 1,
-      'description' => 'A server used for testing.',
-      'backendPluginId' => 'search_api_db',
-      'backendPluginConfig' => array(
-        'min_chars' => 3,
-        'database' => 'default:default',
-      ),
-    );
-    $success = (bool) entity_create('search_api_server', $values)->save();
-    $this->assertTrue($success, 'The server was successfully created.');
-  }
-
-  protected function createIndex() {
-    $this->indexId = 'test_index';
-    $values = array(
-      'name' => 'Test index',
-      'machine_name' => $this->indexId,
-      'datasourcePluginIds' => array('entity:entity_test'),
-      'trackerPluginId' => 'default_tracker',
-      'status' => 1,
-      'description' => 'An index used for testing.',
-      'serverMachineName' => $this->serverId,
-      'options' => array(
-        'cron_limit' => -1,
-        'index_directly' => TRUE,
-        'fields' => array(
-          $this->getFieldId('id') => array(
-            'type' => 'integer',
-          ),
-          $this->getFieldId('name') => array(
-            'type' => 'text',
-            'boost' => '5.0',
-          ),
-          $this->getFieldId('body') => array(
-            'type' => 'text',
-          ),
-          $this->getFieldId('type') => array(
-            'type' => 'string',
-          ),
-          $this->getFieldId('keywords') => array(
-            'type' => 'string',
-          ),
-        ),
-      ),
-    );
-
-    /** @var \Drupal\search_api\Index\IndexInterface $index */
-    $index = entity_create('search_api_index', $values);
-    $success = (bool) $index->save();
-    $this->assertTrue($success, 'The index was successfully created.');
-    $this->assertEqual($index->getTracker()->getTotalItemsCount(), 5, 'Correct item count.');
-    $this->assertEqual($index->getTracker()->getIndexedItemsCount(), 0, 'All items still need to be indexed.');
-  }
-
   protected function indexItems() {
     /** @var \Drupal\search_api\Index\IndexInterface $index */
     $index = entity_load('search_api_index', $this->indexId);

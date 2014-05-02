@@ -7,6 +7,7 @@
 
 namespace Drupal\search_api_db\Tests;
 
+use Drupal\Component\Utility\String;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Language\Language;
 use Drupal\search_api\Index\IndexInterface;
@@ -24,7 +25,7 @@ class SearchApiDbTest extends EntityUnitTestBase {
    *
    * @var array
    */
-  public static $modules = array('field', 'search_api', 'search_api_db');
+  public static $modules = array('field', 'search_api', 'search_api_db', 'search_api_test_db');
 
   /**
    * {@inheritdoc}
@@ -44,6 +45,8 @@ class SearchApiDbTest extends EntityUnitTestBase {
     $this->installSchema('system', array('router'));
     $this->installSchema('user', array('users_data'));
 
+    $this->installConfig(array('search_api_test_db'));
+
     $this->setUpExampleStructure();
   }
 
@@ -52,8 +55,8 @@ class SearchApiDbTest extends EntityUnitTestBase {
    */
   public function testFramework() {
     $this->insertExampleContent();
-    $this->createServer();
-    $this->createIndex();
+    $this->checkDefaultServer();
+    $this->checkDefaultIndex();
     $this->updateIndex();
     $this->searchNoResults();
     $this->indexItems();
@@ -68,6 +71,45 @@ class SearchApiDbTest extends EntityUnitTestBase {
     $this->uninstallModule();
   }
 
+  /**
+   * Tests the server that was installed through default configuration files.
+   */
+  protected function checkDefaultServer() {
+    /** @var \Drupal\search_api\Server\ServerInterface $server */
+    $server = entity_load('search_api_server', $this->serverId);
+    $this->assertTrue((bool) $server, 'The server was successfully created.');
+
+    // Since we're adding a few configurable fields above *after* the index was
+    // originally imported as default configuration, make sure to re-save the
+    // index so tables all the necessary tables get created.
+    // This wouldn't be needed if we were providing the fields above as default
+    // config as well.
+    $index = entity_load('search_api_index', $this->indexId);
+    $index->save();
+
+    // Check that all tables and all columns have been created.
+    $normalized_storage_table = $server->getBackendPluginConfig()['index_tables'][$this->indexId];
+    $field_tables = $server->getBackendPluginConfig()['field_tables'][$this->indexId];
+
+    $this->assertTrue(\Drupal::database()->schema()->tableExists($normalized_storage_table), 'Normalized storage table exists');
+    foreach ($field_tables as $field_table) {
+      $this->assertTrue(\Drupal::database()->schema()->tableExists($field_table['table']), String::format('Field table %table exists', array('%table' => $field_table['table'])));
+      $this->assertTrue(\Drupal::database()->schema()->fieldExists($normalized_storage_table, $field_table['column']), String::format('Field column %column exists', array('%column' => $field_table['column'])));
+    }
+  }
+
+  /**
+   * Tests the index that was installed through default configuration files.
+   */
+  protected function checkDefaultIndex() {
+    /** @var \Drupal\search_api\Index\IndexInterface $index */
+    $index = entity_load('search_api_index', $this->indexId);
+    $this->assertTrue((bool) $index, 'The index was successfully created.');
+
+    $this->assertEqual($index->getTracker()->getTotalItemsCount(), 5, 'Correct item count.');
+    $this->assertEqual($index->getTracker()->getIndexedItemsCount(), 0, 'All items still need to be indexed.');
+  }
+
   protected function updateIndex() {
     /** @var \Drupal\search_api\Index\IndexInterface $index */
     $index = entity_load('search_api_index', $this->indexId);
@@ -77,7 +119,7 @@ class SearchApiDbTest extends EntityUnitTestBase {
     unset($index->options['fields'][$this->getFieldId('keywords')]);
     $index->save();
 
-    /** @var \Drupal\search_api\Server\ServerInterface $server*/
+    /** @var \Drupal\search_api\Server\ServerInterface $server */
     $server = entity_load('search_api_server', $this->serverId, TRUE);
     $index_fields = array_keys($index->options['fields']);
     $server_fields = array_keys($server->backendPluginConfig['field_tables'][$index->id()]);

@@ -19,7 +19,7 @@ class SearchApiViewsTest extends SearchApiWebTestBase {
    *
    * @var array
    */
-  public static $modules = array('search_api_test_views');
+  public static $modules = array('search_api_test_views', 'search_api_test_db');
 
   /**
    * {@inheritdoc}
@@ -34,6 +34,7 @@ class SearchApiViewsTest extends SearchApiWebTestBase {
 
   public function setUp() {
     parent::setUp();
+    $this->installConfig(array('search_api_test_db'));
     $this->setUpExampleStructure();
   }
 
@@ -43,8 +44,6 @@ class SearchApiViewsTest extends SearchApiWebTestBase {
    */
   public function testFulltextSearch() {
     $this->insertExampleContent();
-    $this->createServer();
-    $this->createIndex();
     $this->indexItems();
 
     $this->drupalGet('search-api-test-fulltext');
