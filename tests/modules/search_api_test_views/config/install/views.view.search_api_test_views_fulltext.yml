@@ -1,5 +1,5 @@
 base_field: search_api_id
-base_table: search_api_index_test_index
+base_table: search_api_index_database_search_index
 core: 8.x
 description: ''
 status: true
@@ -71,7 +71,7 @@ display:
             'entity:entity_test': default
       fields:
         search_api_id:
-          table: search_api_index_test_index
+          table: search_api_index_database_search_index
           field: search_api_id
           id: search_api_id
           plugin_id: numeric
@@ -133,7 +133,7 @@ display:
       filters:
         search_api_fulltext:
           id: search_api_fulltext
-          table: search_api_index_test_index
+          table: search_api_index_database_search_index
           field: search_api_fulltext
           relationship: none
           group_type: group

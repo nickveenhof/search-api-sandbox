@@ -44,7 +44,6 @@ class SearchApiViewsTest extends SearchApiWebTestBase {
     $this->setUpExampleStructure();
   }
 
-
   /**
    * Tests a view with a fulltext search field.
    */
