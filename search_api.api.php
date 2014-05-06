@@ -351,4 +351,3 @@ function hook_search_api_views_query_alter(\Drupal\views\Entity\View &$view, Dru
 /**
  * @} End of "addtogroup hooks".
  */
-

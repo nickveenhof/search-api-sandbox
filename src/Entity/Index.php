@@ -1091,14 +1091,8 @@ class Index extends ConfigEntityBase implements IndexInterface {
         $this->startTracking();
       }
 
-      if ($update && \Drupal::moduleHandler()->moduleExists('views')) {
-        if (!$this->status && $this->original->status) {
-          $this->invalidateViewsCache();
-        }
-        // Check whether the indexed fields changed.
-        if ($this->original->getFields() != $this->getFields()) {
-          views_invalidate_cache();
-        }
+      if (\Drupal::moduleHandler()->moduleExists('views')) {
+        views_invalidate_cache();
       }
 
       $this->resetCaches();
@@ -1189,29 +1183,10 @@ class Index extends ConfigEntityBase implements IndexInterface {
       if ($index->hasValidServer()) {
         $index->getServer()->removeIndex($index);
       }
-      if (\Drupal::moduleHandler()->moduleExists('views')) {
-        $index->invalidateViewsCache();
-      }
     }
-  }
-
-  /**
-   * Function for reacting to a disabled or deleted search index.
-   */
-  protected function invalidateViewsCache() {
-    $names = array();
-    $table = 'search_api_index_' . $this->machine_name;
-    foreach (\Drupal::entityManager()->getStorage('view')->loadMultiple() as $name => $view) {
-      if ($view->get('status') && $view->get('base_table') == $table) {
-        $names[] = $name;
-        // @todo: if ($index_deleted) $view->delete()?
-      }
-    }
-    if ($names) {
+    if (\Drupal::moduleHandler()->moduleExists('views')) {
       views_invalidate_cache();
-      return TRUE;
     }
-    return FALSE;
   }
 
   /**

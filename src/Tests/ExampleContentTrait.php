@@ -1,6 +1,7 @@
 <?php
 /**
- * Contains \Drupal\search_api\Tests\TestDataTrait.
+ * @file
+ * Contains \Drupal\search_api\Tests\ExampleDataTrait.
  */
 
 namespace Drupal\search_api\Tests;
@@ -13,20 +14,6 @@ use Drupal\search_api\Index\IndexInterface;
  * Contains helpers to create data that can be used by tests.
  */
 trait ExampleContentTrait {
-
-  /**
-   * A Search API server ID.
-   *
-   * @var string
-   */
-  protected $serverId;
-
-  /**
-   * A Search API index ID.
-   *
-   * @var string
-   */
-  protected $indexId;
 
   protected $entities = array();
 
@@ -127,9 +114,9 @@ trait ExampleContentTrait {
     $this->assertEqual($count, 5, "$count items inserted.");
   }
 
-  protected function indexItems() {
+  protected function indexItems($index_id) {
     /** @var \Drupal\search_api\Index\IndexInterface $index */
-    $index = entity_load('search_api_index', $this->indexId);
+    $index = entity_load('search_api_index', $index_id);
     $index->index();
   }
 
@@ -161,4 +148,4 @@ trait ExampleContentTrait {
       }, $entity_ids);
   }
 
-} 
+}

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains SearchApiViewsHandlerArgument.
+ * Contains \Drupal\search_api\Plugin\views\argument\SearchApiArgument.
  */
 
 namespace Drupal\search_api\Plugin\views\argument;

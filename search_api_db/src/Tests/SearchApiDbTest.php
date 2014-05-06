@@ -21,6 +21,20 @@ class SearchApiDbTest extends EntityUnitTestBase {
   use ExampleContentTrait;
 
   /**
+   * A Search API server ID.
+   *
+   * @var string
+   */
+  protected $serverId = 'database_search_server';
+
+  /**
+   * A Search API index ID.
+   *
+   * @var string
+   */
+  protected $indexId = 'database_search_index';
+
+  /**
    * Modules to enable.
    *
    * @var array
@@ -59,7 +73,7 @@ class SearchApiDbTest extends EntityUnitTestBase {
     $this->checkDefaultIndex();
     $this->updateIndex();
     $this->searchNoResults();
-    $this->indexItems();
+    $this->indexItems($this->indexId);
     $this->searchSuccess1();
     $this->checkFacets();
     $this->regressionTests();
@@ -266,7 +280,7 @@ class SearchApiDbTest extends EntityUnitTestBase {
     $this->assertTrue($success, 'The server was successfully edited.');
 
     $this->clearIndex();
-    $this->indexItems();
+    $this->indexItems($this->indexId);
 
     // Reset the internal cache so the new values will be available.
     entity_load('search_api_index', $this->indexId, TRUE);
@@ -655,7 +669,7 @@ class SearchApiDbTest extends EntityUnitTestBase {
       'type' => 'item',
     ))->save();
 
-    $this->indexItems();
+    $this->indexItems($this->indexId);
 
     $query = $this->buildSearch(NULL, array('prices,3.25'));
     $results = $query->execute();

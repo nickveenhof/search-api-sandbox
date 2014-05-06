@@ -12,6 +12,13 @@ namespace Drupal\search_api\Tests;
  */
 class SearchApiViewsTest extends SearchApiWebTestBase {
 
+  /**
+   * A Search API index ID.
+   *
+   * @var string
+   */
+  protected $indexId = 'database_search_index';
+
   use ExampleContentTrait;
 
   /**
@@ -19,7 +26,7 @@ class SearchApiViewsTest extends SearchApiWebTestBase {
    *
    * @var array
    */
-  public static $modules = array('search_api_test_views', 'search_api_test_db');
+  public static $modules = array('search_api_test_views');
 
   /**
    * {@inheritdoc}
@@ -34,7 +41,6 @@ class SearchApiViewsTest extends SearchApiWebTestBase {
 
   public function setUp() {
     parent::setUp();
-    $this->installConfig(array('search_api_test_db'));
     $this->setUpExampleStructure();
   }
 
@@ -44,7 +50,7 @@ class SearchApiViewsTest extends SearchApiWebTestBase {
    */
   public function testFulltextSearch() {
     $this->insertExampleContent();
-    $this->indexItems();
+    $this->indexItems($this->indexId);
 
     $this->drupalGet('search-api-test-fulltext');
     // By default, it should show all entities.
