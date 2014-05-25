@@ -106,8 +106,8 @@ class ServerForm extends EntityForm {
     if (!isset($default_backend_id)) {
       $options = $this->getBackendPluginDefinitionOptions();
       if (!empty($options)) {
-	$options_keys = array_keys($options);
-	$default_backend_id = array_shift($options_keys);
+        $options_keys = array_keys($options);
+        $default_backend_id = array_shift($options_keys);
       }
     }
 
