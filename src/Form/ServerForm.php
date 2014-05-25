@@ -92,6 +92,29 @@ class ServerForm extends EntityForm {
   }
 
   /**
+   * Get the default backend plugin definition for use with a select element
+   *
+   * @param \Drupal\search_api\Server\ServerInterface $server
+   *   An instance of ServerInterface.
+   *
+   * @return string
+   *   A default backend plugin, identified by the backend plugin ID.
+   */
+   protected function getDefaultBackendPluginDefinition(ServerInterface $server) {
+    $default_backend_id = $server->getBackendId();
+
+    if (!isset($default_backend_id)) {
+      $options = $this->getBackendPluginDefinitionOptions();
+      if (!empty($options)) {
+	$options_keys = array_keys($options);
+	$default_backend_id = array_shift($options_keys);
+      }
+    }
+
+    return $default_backend_id;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -181,7 +204,7 @@ class ServerForm extends EntityForm {
       '#title' => $this->t('Backend'),
       '#description' => $this->t('Choose a backend to use for this server.'),
       '#options' => $this->getBackendPluginDefinitionOptions(),
-      '#default_value' => $server->getBackendId(),
+      '#default_value' => $this->getDefaultBackendPluginDefinition($server),
       '#required' => TRUE,
       '#ajax' => array(
         'callback' => array($this, 'buildAjaxBackendConfigForm'),
@@ -214,6 +237,11 @@ class ServerForm extends EntityForm {
       ),
       '#tree' => TRUE,
     );
+
+    if ($server->isNew()) {
+      $server->backendPluginId = $this->getDefaultBackendPluginDefinition($server);
+    }
+
     // Check if the server has a valid backend configured.
     if ($server->hasValidBackend()) {
       // Get the backend.

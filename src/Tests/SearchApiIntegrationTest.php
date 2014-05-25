@@ -83,12 +83,11 @@ class SearchApiIntegrationTest extends SearchApiWebTestBase {
       'name' => '',
       'status' => 1,
       'description' => 'A server used for testing.',
-      'backendPluginId' => '',
+      'backendPluginId' => 'search_api_test_backend',
     );
 
     $this->drupalPostForm($settings_path, $edit, t('Save'));
     $this->assertText(t('!name field is required.', array('!name' => t('Server name'))));
-    $this->assertText(t('!name field is required.', array('!name' => t('Backend'))));
 
     $edit = array(
       'name' => 'Search API test server',
