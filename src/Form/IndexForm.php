@@ -137,6 +137,29 @@ class IndexForm extends EntityForm {
   }
 
   /**
+   * Get the default server id for use with a select element
+   *
+   * @param \Drupal\search_api\Server\IndexInterface $index
+   *   An instance of IndexInterface.
+   *
+   * @return string
+   *   A default server, identified by the server ID.
+   */
+  protected function getDefaultServerOption(IndexInterface $index) {
+    $default_server_id = $index->hasValidServer() ? $index->getServer()->id() : NULL;
+
+    if (!isset($default_server_id)) {
+      $options = $this->getServerOptions();
+      if (!empty($options)) {
+        $options_keys = array_keys($options);
+        $default_server_id = array_shift($options_keys);
+      }
+    }
+
+    return $default_server_id;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -312,7 +335,7 @@ class IndexForm extends EntityForm {
       '#title' => $this->t('Server'),
       '#description' => $this->t('Select the server this index should reside on. Index can not be enabled without connection to valid server.'),
       '#options' => array('' => $this->t('< No server >')) + $this->getServerOptions(),
-      '#default_value' => $index->hasValidServer() ? $index->getServer()->id() : NULL,
+      '#default_value' => $this->getDefaultServerOption($index),
       '#weight' => 9,
     );
 
