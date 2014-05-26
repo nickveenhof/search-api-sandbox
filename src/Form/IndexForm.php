@@ -501,11 +501,11 @@ class IndexForm extends EntityForm {
     $form_state['datasourcePlugins'] = array();
     foreach ($form_state['values']['datasourcePluginIds'] as $datasource_id) {
       if ($entity->isValidDatasource($datasource_id)) {
-	$datasource = $entity->getDatasource($datasource_id);
+        $datasource = $entity->getDatasource($datasource_id);
       }
       else {
-	$config = array('index' => $entity);
-	$datasource = $this->datasourcePluginManager->createInstance($datasource_id, $config);
+        $config = array('index' => $entity);
+        $datasource = $this->datasourcePluginManager->createInstance($datasource_id, $config);
       }
       $form_state['datasourcePlugins'][$datasource_id] = $datasource;
       $datasource_form_state = array();
