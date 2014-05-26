@@ -510,7 +510,8 @@ class IndexForm extends EntityForm {
       $form_state['datasourcePlugins'][$datasource_id] = $datasource;
       $datasource_form_state = array();
       $datasource_form_state['values'] = &$form_state['values']['datasourcePluginConfigs'][$datasource_id];
-      $datasource->validateConfigurationForm($form['datasourcePluginConfigs'][$datasource_id], $datasource_form_state);
+      $datasource_form = (isset($form['datasourcePluginConfigs'][$datasource_id])) ? $form['datasourcePluginConfigs'][$datasource_id] : array();
+      $datasource->validateConfigurationForm($datasource_form, $datasource_form_state);
       unset($datasource_form_state);
     }
 
