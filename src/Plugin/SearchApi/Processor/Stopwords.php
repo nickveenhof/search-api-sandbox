@@ -117,7 +117,7 @@ class Stopwords extends FieldsProcessorPluginBase {
     $form['stopwords'] = array(
       '#type' => 'textarea',
       '#title' => $this->t('Stopwords'),
-      '#description' => $this->t('Enter a space and/or linebreak separated list of stopwords that will be removed from content before it is indexed and from search terms before searching.'),
+      '#description' => $this->t('Enter linebreak separated list of stopwords that will be removed from content before it is indexed and from search terms before searching.'),
       '#default_value' => implode(PHP_EOL, $this->configuration['stopwords']),
     );
 
