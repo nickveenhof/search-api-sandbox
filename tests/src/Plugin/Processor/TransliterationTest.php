@@ -70,48 +70,44 @@ class TransliterationTest extends UnitTestCase {
   }
 
   /**
-   * Tests that integers are not affected.
+   * @covers ::process
+   * @dataProvider transliterationStringProvider
+   *
+   * @param mixed $value
+   *   The value to process.
+   * @param mixed $expected
+   *   The expected result.
+   * @param bool $call_transliterate_method
+   *   TRUE if the TransliterationInterface::transliterate() is expected to be
+   *   called.
    */
-  public function testTransliterationWithInteger() {
-    $value = 5;
-    $this->assertProcess($value, $value);
-  }
-
-  /**
-   * Tests that floating point numbers are not affected.
-   */
-  public function testTransliterationWithDouble() {
-    $value = 3.14;
-    $this->assertProcess($value, $value);
-  }
-
-  /**
-   * Tests that ASCII strings are not affected.
-   */
-  public function testTransliterationWithUSAscii() {
-    $value = 'ABCDEfghijk12345/$*';
-
-    $this->transliterationService->expects($this->once())
-      ->method('transliterate')
-      ->with($value)
-      ->will($this->returnValue($value));
-
-    $this->assertProcess($value, $value);
-  }
-
-  /**
-   * Tests correct transliteration of umlaut and accented characters.
-   */
-  public function testTransliterationWithNonUSAscii() {
-    $value = 'Größe à férfi';
-    $expected = 'Grosse a ferfi';
-
-    $this->transliterationService->expects($this->once())
-      ->method('transliterate')
-      ->with($value)
-      ->will($this->returnValue($expected));
-
+  public function testProcess($value, $expected, $call_transliterate_method) {
+    if ($call_transliterate_method) {
+      $this->transliterationService->expects($this->once())
+        ->method('transliterate')
+        ->with($value)
+        ->will($this->returnValue($expected));
+    }
     $this->assertProcess($value, $expected);
+  }
+
+  /**
+   * Dataprovider for testProcess().
+   *
+   * @return array
+   *   The test data.
+   */
+  public function transliterationStringProvider() {
+    return array(
+      // Tests that integers are not affected.
+      array(5, 5, FALSE),
+      // Tests that floating point numbers are not affected.
+      array(3.14, 3.14, FALSE),
+      // Tests that ASCII strings are not affected.
+      array('ABCDEfghijk12345/$*', 'ABCDEfghijk12345/$*', TRUE),
+      // Tests correct transliteration of umlaut and accented characters.
+      array('Größe à férfi', 'Grosse a ferfi', TRUE),
+    );
   }
 
   /**
