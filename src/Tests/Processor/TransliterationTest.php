@@ -42,7 +42,7 @@ class TransliterationTest extends ProcessorTestBase {
    */
   public function setUp() {
     parent::setUp('transliteration');
-    $this->processor = new Transliteration(array(), 'transliteration', array());
+    $this->processor = Transliteration::create(\Drupal::getContainer(), array(), 'transliteration', array());
   }
 
   /**
