@@ -28,9 +28,9 @@ class TransliterationTest extends UnitTestCase {
   protected $processMethod;
 
   /**
-   * The Transliteration processor plugin under test.
+   * The processor plugin under test.
    *
-   * @var Drupal\search_api\Tests\Plugin\Processor
+   * @var Drupal\search_api\Processor\FieldsProcessorPluginBase
    */
   protected $processor;
 
