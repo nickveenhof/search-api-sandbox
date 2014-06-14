@@ -35,13 +35,13 @@ search_api.index.*:
               label: 'A processor'
               mapping:
                 status:
-                  type: 'string'
+                  type: integer
                   label: 'Status of the processor'
                 weight:
-                  type: 'integer'
+                  type: integer
                   label: 'The weight of the processor'
                 processorPluginId:
-                  type: 'string'
+                  type: string
                   label: 'The plugin ID of the processor'
                 settings:
                   type: 'search_api.processor.plugin.[%parent.processorPluginId]'
@@ -51,6 +51,19 @@ search_api.index.*:
       label: 'Datasource plugin IDs'
       sequence:
         - type: string
+    datasourcePluginConfigs:
+      type: sequence
+      label: 'Datasource plugin configuration'
+      sequence:
+        - type: mapping
+          label: 'Configuration for a specific databsoure'
+          mapping:
+            datasourceBasePluginId:
+              type: string
+              label: 'The base plugin ID of the datasource'
+            settings:
+              type: 'search_api.datasource.plugin.[%parent.datasourceBasePluginId]'
+
     # How to do this properly?
     #datasourcePluginConfigs:
     #  type: mapping

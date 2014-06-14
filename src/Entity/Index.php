@@ -1133,6 +1133,18 @@ class Index extends ConfigEntityBase implements IndexInterface {
     // https://drupal.org/node/2090341
     $this->options['processors']['language']['status'] = TRUE;
     $this->options['fields']['search_api_language'] = array('type' => 'string');
+
+    // @todo Revisit the datasource plugin config.
+    // We need to add the basePluginId to the config file to be able to create
+    // a matching schema. We need to revisit this.
+    // We also should investigate if it isn't better to merge datasourcePluginId
+    // and datasourcePluginConfig
+    foreach ($this->datasourcePluginConfigs as $id => $config) {
+      $datasource = $this->getDatasource($id);
+      unset($this->datasourcePluginConfigs[$id]);
+      $this->datasourcePluginConfigs[$id]['settings'] = $config;
+      $this->datasourcePluginConfigs[$id]['datasourceBasePluginId'] = $datasource->getBasePluginId();
+    }
   }
 
   /**

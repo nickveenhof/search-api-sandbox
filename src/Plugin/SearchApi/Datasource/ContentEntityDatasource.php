@@ -145,6 +145,7 @@ class ContentEntityDatasource extends DatasourcePluginBase implements ContainerF
     if ($this->isEntityBundlable()) {
       // Get the entity type bundles.
       $bundles = $this->getEntityBundleOptions();
+
       // Build the default operation element.
       $form['default'] = array(
         '#type' => 'radios',
@@ -153,14 +154,14 @@ class ContentEntityDatasource extends DatasourcePluginBase implements ContainerF
           1 => $this->t('All except those selected'),
           0 => $this->t('None except those selected'),
         ),
-        '#default_value' => $this->configuration['default'],
+        '#default_value' => isset($this->configuration['settings']['default']) ? $this->configuration['settings']['default'] : $this->configuration['default'],
       );
       // Build the bundle selection element.
       $form['bundles'] = array(
         '#type' => 'checkboxes',
         '#title' => $this->t('Bundles'),
         '#options' => $bundles,
-        '#default_value' => $this->configuration['bundles'],
+        '#default_value' => isset($this->configuration['settings']['bundles']) ? $this->configuration['settings']['bundles'] : $this->configuration['bundles'],
         '#size' => min(4, count($bundles)),
         '#multiple' => TRUE,
       );
@@ -307,9 +308,9 @@ class ContentEntityDatasource extends DatasourcePluginBase implements ContainerF
     // Check if the entity supports bundles.
     if ($this->isEntityBundlable()) {
       // Get the configured bundles.
-      $bundles = array_values(array_intersect_key($this->getEntityBundleOptions(), $this->configuration['bundles']));
+      $bundles = array_values(array_intersect_key($this->getEntityBundleOptions(), $this->configuration['settings']['bundles']));
       // Check in what operation the datasource is performing.
-      if ($this->configuration['default'] == TRUE) {
+      if ($this->configuration['settings']['default'] == TRUE) {
         // Build the summary.
         $summary = $this->t('Excluded bundles: @bundles', array('@bundles' => implode(', ', $bundles)));
       }
@@ -442,7 +443,7 @@ class ContentEntityDatasource extends DatasourcePluginBase implements ContainerF
     // chosen
     if ($configuration['default']) {
       $bundles = $this->getEntityBundles();
-      foreach ($configuration['bundles'] as $config_bundle_name => $config_bundle) {
+      foreach ($configuration['bundles'] as $config_bundle) {
         if (isset($bundles[$config_bundle])) {
           unset($bundles[$config_bundle]);
         }
