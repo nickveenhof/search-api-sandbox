@@ -21,13 +21,17 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class Transliteration extends FieldsProcessorPluginBase {
 
   /**
-  * @var object
-  */
+   * The transliteration service.
+   *
+   * @var TransliterationInterface
+   */
   protected $transliterator = NULL;
 
   /**
-  * @var string
-  */
+   * The langcode of the language the content is in.
+   *
+   * @var string
+   */
   protected $langcode = NULL;
 
   /**
