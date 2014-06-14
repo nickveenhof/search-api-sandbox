@@ -74,9 +74,6 @@ class Transliteration extends FieldsProcessorPluginBase {
       if ($this->langcode && $this->transliterator) {
         $value = $this->transliterator->transliterate($value, $this->langcode);
       }
-      else {
-        //@todo - what should our fallback position be here?
-      }
     }
   }
 
