@@ -22,7 +22,7 @@ use Drupal\search_api\Utility\Utility;
 // @todo Port this.
 //   - New preprocessIndexItems() style.
 //   - Probably also some handling for the different datasources.
-class AddAggregation extends ProcessorPluginBase {
+class AggregatedField extends ProcessorPluginBase {
 
   /**
    * {@inheritdoc}
