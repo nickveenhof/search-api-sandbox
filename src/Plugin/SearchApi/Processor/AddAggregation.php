@@ -7,6 +7,7 @@
 
 namespace Drupal\search_api\Plugin\SearchApi\Processor;
 
+use Drupal\Component\Utility\String;
 use Drupal\Core\TypedData\DataDefinition;
 use Drupal\search_api\Datasource\DatasourceInterface;
 use Drupal\search_api\Processor\ProcessorPluginBase;
@@ -19,40 +20,26 @@ use Drupal\search_api\Utility\Utility;
  *   description = @Translation("Create aggregate fields to be additionally indexed.")
  * )
  */
+
 // @todo Port this.
 //   - New preprocessIndexItems() style.
 //   - Probably also some handling for the different datasources.
 class AddAggregation extends ProcessorPluginBase {
+
+  protected $reductionType;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function testType($type) {
+    return Utility::isTextType($type, array('text', 'tokenized_text', 'string', ''));
+  }
 
   /**
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, array &$form_state) {
     $form = parent::buildConfigurationForm($form, $form_state);
-
-    /*
-    $fields = $this->index->getFields(FALSE);
-    $field_options = array();
-    $field_properties = array();
-    foreach ($fields as $name => $field) {
-      $field_options[$name] = String::checkPlain($field['name']);
-      $field_properties[$name] = array(
-        '#attributes' => array('title' => $name),
-        '#description' => String::checkPlain($field['description']),
-      );
-    }
-    $additional = empty($this->configuration['fields']) ? array() : $this->configuration['fields'];
-
-    $types = $this->getTypes();
-    $type_descriptions = $this->getTypes('description');
-    $tmp = array();
-    foreach ($types as $type => $name) {
-      $tmp[$type] = array(
-        '#type' => 'item',
-        '#description' => $type_descriptions[$type],
-      );
-    }
-    $type_descriptions = $tmp;
 
     $form['description'] = array(
       '#markup' => t('<p>This data alteration lets you define additional fields that will be added to this index. ' .
@@ -61,36 +48,113 @@ class AddAggregation extends ProcessorPluginBase {
         '<p>To remove a previously defined field, click the "Remove field" button.</p>' .
         '<p>You can also change the names or contained fields of existing aggregated fields.</p>'),
     );
-    $form['fields']['#prefix'] = '<div id="search-api-alter-add-aggregation-field-settings">';
-    $form['fields']['#suffix'] = '</div>';
-    if (isset($this->changes)) {
-      $form['fields']['#prefix'] .= '<div class="messages warning">All changes in the form will not be saved until the <em>Save configuration</em> button at the form bottom is clicked.</div>';
+
+    $this->buildFieldsForm($form, $form_state);
+
+    $form['actions']['#type'] = 'actions';
+    $form['actions'] = array(
+      '#type' => 'actions',
+      'add' => array(
+        '#type' => 'submit',
+        '#value' => t('Add new Field'),
+        '#submit' => array(array($this, 'submitAjaxFieldButton')),
+        '#limit_validation_errors' => array(),
+        '#name' => 'add_aggregation_field',
+        '#ajax' => array(
+          'callback' => array($this, 'buildAjaxAddFieldButton'),
+          'wrapper' => 'search-api-alter-add-aggregation-field-settings',
+        ),
+      ),
+    );
+
+    return $form;
+  }
+
+  public function buildFieldsForm(array &$form, array &$form_state) {
+    if (isset($form_state['triggering_element']['#name'])) {
+      $button_name = $form_state['triggering_element']['#name'];
+      if ($button_name == 'add_aggregation_field') {
+        for ($i = 1; isset($form_state['fields']['search_api_aggregation_' . $i]); ++$i) {
+        }
+        $form_state['fields']['search_api_aggregation_' . $i] = array(
+          'label' => '',
+          'type' => 'fulltext',
+          'fields' => array(),
+        );
+      }
+      else {
+        // Get the field id from the button
+        $field_id = substr($button_name, 25);
+        unset($form_state['fields'][$field_id]);
+      }
     }
-    foreach ($additional as $name => $field) {
-      $form['fields'][$name] = array(
-        '#type' => 'fieldset',
-        '#title' => $field['name'] ? $field['name'] : t('New field'),
-        '#collapsible' => TRUE,
-        '#collapsed' => (boolean) $field['name'],
+
+    $form['fields'] = array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'id' => 'search-api-alter-add-aggregation-field-settings',
+      ),
+      '#weight' => 7,
+      '#tree' => TRUE,
+    );
+
+    $fields = $this->index->getFields(FALSE);
+    $field_options = array();
+    $field_properties = array();
+    /** @var \Drupal\search_api\Item\FieldInterface[] $fields */
+    foreach ($fields as $field_id => $field) {
+
+      $field_options[$field_id] = $field->getLabel();
+      $field_properties[$field_id] = array(
+        '#attributes' => array('title' => $field_id),
+        '#description' => $field->getDescription(),
       );
-      $form['fields'][$name]['name'] = array(
+    }
+
+    $types = $this->getTypes();
+    $previous_type_descriptions = $this->getTypes('description');
+
+    $type_descriptions = array();
+    foreach ($types as $type => $name) {
+      $type_descriptions[$type] = array(
+        '#type' => 'item',
+        '#description' => $previous_type_descriptions[$type],
+      );
+    }
+
+    /** @var \Drupal\search_api\Item\FieldInterface[] $additional_fields */
+    $additional_fields = empty($this->configuration['fields']) ? array() : $this->configuration['fields'];
+    if (!empty($form_state['fields']) && is_array($form_state['fields'])) {
+      $additional_fields = array_merge($form_state['fields'], $additional_fields);
+    }
+
+    foreach ($additional_fields as $field_id => $field) {
+      $form['fields'][$field_id] = array(
+        '#type' => 'fieldset',
+        '#title' => $field['label'] ? $field['label'] : t('New field'),
+        '#collapsible' => TRUE,
+        '#collapsed' => (boolean) $field['label'],
+      );
+      $form['fields'][$field_id]['name'] = array(
         '#type' => 'textfield',
         '#title' => t('New field name'),
-        '#default_value' => $field['name'],
+        '#default_value' => $field['label'],
         '#required' => TRUE,
       );
-      $form['fields'][$name]['type'] = array(
+      $form['fields'][$field_id]['type'] = array(
         '#type' => 'select',
         '#title' => t('Aggregation type'),
         '#options' => $types,
-        '#default_value' => $field['type'],
+        '#default_value' => $field['label'],
         '#required' => TRUE,
       );
-      $form['fields'][$name]['type_descriptions'] = $type_descriptions;
+
+      $form['fields'][$field_id]['type_descriptions'] = $type_descriptions;
       foreach (array_keys($types) as $type) {
-        $form['fields'][$name]['type_descriptions'][$type]['#states']['visible'][':input[name="callbacks[search_api_alter_add_aggregation][settings][fields][' . $name . '][type]"]']['value'] = $type;
+        $form['fields'][$field_id]['type_descriptions'][$type]['#states']['visible'][':input[name="callbacks[search_api_alter_add_aggregation][settings][fields][' . $field_id . '][type]"]']['value'] = $type;
       }
-      $form['fields'][$name]['fields'] = array_merge($field_properties, array(
+
+      $form['fields'][$field_id]['fields'] = array_merge($field_properties, array(
         '#type' => 'checkboxes',
         '#title' => t('Contained fields'),
         '#options' => $field_options,
@@ -98,68 +162,68 @@ class AddAggregation extends ProcessorPluginBase {
         '#attributes' => array('class' => array('search-api-alter-add-aggregation-fields')),
         '#required' => TRUE,
       ));
-      $form['fields'][$name]['actions'] = array(
+
+      $form['fields'][$field_id]['actions'] = array(
         '#type' => 'actions',
         'remove' => array(
           '#type' => 'submit',
           '#value' => t('Remove field'),
-          '#submit' => array('_search_api_add_aggregation_field_submit'),
+          '#submit' => array(array($this, 'submitAjaxFieldButton')),
           '#limit_validation_errors' => array(),
-          '#name' => 'search_api_add_aggregation_remove_' . $name,
+          '#name' => 'remove_aggregation_field_' . $field_id,
           '#ajax' => array(
-            'callback' => '_search_api_add_aggregation_field_ajax',
+            'callback' => array($this, 'buildAjaxAddFieldButton'),
             'wrapper' => 'search-api-alter-add-aggregation-field-settings',
           ),
         ),
       );
     }
-    $form['actions']['#type'] = 'actions';
-    $form['actions']['add_field'] = array(
-      '#type' => 'submit',
-      '#value' => t('Add new field'),
-      '#submit' => array('_search_api_add_aggregation_field_submit'),
-      '#limit_validation_errors' => array(),
-      '#ajax' => array(
-        'callback' => '_search_api_add_aggregation_field_ajax',
-        'wrapper' => 'search-api-alter-add-aggregation-field-settings',
-      ),
-    );
-    */
-    return $form;
+  }
+  /**
+   * Button submit handler for tracker configure button 'tracker_configure' button.
+   */
+  public static function submitAjaxFieldButton(array $form, array &$form_state) {
+    $form_state['rebuild'] = TRUE;
+  }
+
+  /**
+   * Button submit handler for tracker configure button 'tracker_configure' button.
+   */
+  public static function buildAjaxAddFieldButton($form, &$form_state) {
+    return $form['processors']['settings']['add_aggregation']['fields'];
   }
 
   /**
    * {@inheritdoc}
    */
   public function validateConfigurationForm(array &$form, array &$form_state) {
-    /*
     unset($form_state['values']['actions']);
-    if (empty($form_state['values']['fields'])) {
+    if (empty($form_state['values']['aggregated_fields'])) {
       return;
     }
-    foreach ($form_state['values']['fields'] as $name => $field) {
-      $fields = $form_state['values']['fields'][$name]['fields'] = array_values(array_filter($field['fields']));
-      unset($form_state['values']['fields'][$name]['actions']);
-      if ($field['name'] && !$fields) {
-        form_error($form['fields'][$name]['fields'], t('You have to select at least one field to aggregate. If you want to remove an aggregated field, please delete its name.'));
+    foreach ($form_state['values']['aggregated_fields'] as $field_id => $field) {
+      $fields = $form_state['values']['aggregated_fields'][$field_id]['aggregated_fields'] = array_values(array_filter($field['fields']));
+      unset($form_state['values']['aggregated_fields'][$field_id]['actions']);
+      if ($field['label'] && !$fields) {
+        $error_message = t('You have to select at least one field to aggregate. If you want to remove an aggregated field, please delete its name.');
+        \Drupal::formBuilder()->setError($form['aggregated_fields'][$field_id]['fields'], $form_state, $error_message);
       }
     }
-    */
   }
 
   /**
    * {@inheritdoc}
    */
   public function preprocessIndexItems(array &$items) {
-    if (!$items) {
+    /*if (!$items) {
       return;
     }
     if (isset($this->configuration['fields'])) {
       $types = $this->getTypes('type');
       foreach ($items as $item) {
         $wrapper = $this->index->entityWrapper($item);
-        foreach ($this->configuration['fields'] as $name => $field) {
-          if ($field['name']) {
+        foreach ($this->configuration['fields'] as $field_id => $field) {
+          if ($field['label']) {
             $required_fields = array();
             foreach ($field['fields'] as $f) {
               if (!isset($required_fields[$f])) {
@@ -176,14 +240,14 @@ class AddAggregation extends ProcessorPluginBase {
             $values = $this->flattenArray($values);
 
             $this->reductionType = $field['type'];
-            $item->$name = array_reduce($values, array($this, 'reduce'), NULL);
-            if ($field['type'] == 'count' && !$item->$name) {
-              $item->$name = 0;
+            $item->{$field_id} = array_reduce($values, array($this, 'reduce'), NULL);
+            if ($field['type'] == 'count' && !$item->{$field_id}) {
+              $item->{$field_id} = 0;
             }
           }
         }
       }
-    }
+    }*/
   }
 
   /**
@@ -234,13 +298,13 @@ class AddAggregation extends ProcessorPluginBase {
     }
     $types = $this->getTypes('type');
     if (isset($this->configuration['fields'])) {
-      foreach ($this->configuration['fields'] as $name => $field) {
+      foreach ($this->configuration['fields'] as $field_id => $field) {
         $definition = array(
-          'label' => $field['name'],
+          'label' => $field['label'],
           'description' => empty($field['description']) ? '' : $field['description'],
           'type' => $types[$field['type']],
         );
-        $properties[$name] = new DataDefinition($definition);
+        $properties[$field_id] = new DataDefinition($definition);
       }
     }
   }
@@ -251,7 +315,7 @@ class AddAggregation extends ProcessorPluginBase {
   protected function fieldDescription(array $field, array $index_fields) {
     $fields = array();
     foreach ($field['fields'] as $f) {
-      $fields[] = isset($index_fields[$f]) ? $index_fields[$f]['name'] : $f;
+      $fields[] = isset($index_fields[$f]) ? $index_fields[$f]['label'] : $f;
     }
     $type = $this->getTypes();
     $type = $type[$field['type']];
@@ -302,40 +366,5 @@ class AddAggregation extends ProcessorPluginBase {
     return array();
   }
 
-  /**
-   * Submit helper callback for buttons in the callback's configuration form.
-   */
-  public function formButtonSubmit(array $form, array &$form_state) {
-    $button_name = $form_state['triggering_element']['#name'];
-    if ($button_name == 'op') {
-      for ($i = 1; isset($this->configuration['fields']['search_api_aggregation_' . $i]); ++$i) {
-      }
-      $this->configuration['fields']['search_api_aggregation_' . $i] = array(
-        'name' => '',
-        'type' => 'fulltext',
-        'fields' => array(),
-      );
-    }
-    else {
-      $field = substr($button_name, 34);
-      unset($this->configuration['fields'][$field]);
-    }
-    $form_state['rebuild'] = TRUE;
-    $this->changes = TRUE;
-  }
 
-}
-
-/**
- * Submit function for buttons in the callback's configuration form.
- */
-function _search_api_add_aggregation_field_submit(array $form, array &$form_state) {
-  $form_state['callbacks']['search_api_alter_add_aggregation']->formButtonSubmit($form, $form_state);
-}
-
-/**
- * AJAX submit function for buttons in the callback's configuration form.
- */
-function _search_api_add_aggregation_field_ajax(array $form, array &$form_state) {
-  return $form['callbacks']['settings']['search_api_alter_add_aggregation']['fields'];
 }
