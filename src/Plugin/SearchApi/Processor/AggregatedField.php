@@ -7,7 +7,6 @@
 
 namespace Drupal\search_api\Plugin\SearchApi\Processor;
 
-use Drupal\Component\Utility\String;
 use Drupal\Core\TypedData\DataDefinition;
 use Drupal\search_api\Datasource\DatasourceInterface;
 use Drupal\search_api\Processor\ProcessorPluginBase;
@@ -15,25 +14,14 @@ use Drupal\search_api\Utility\Utility;
 
 /**
  * @SearchApiProcessor(
- *   id = "add_aggregation",
- *   label = @Translation("Aggregation processor"),
+ *   id = "aggregated_field",
+ *   label = @Translation("Aggregated Field Processor"),
  *   description = @Translation("Create aggregate fields to be additionally indexed.")
  * )
  */
-
-// @todo Port this.
-//   - New preprocessIndexItems() style.
-//   - Probably also some handling for the different datasources.
-class AddAggregation extends ProcessorPluginBase {
+class AggregatedField extends ProcessorPluginBase {
 
   protected $reductionType;
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function testType($type) {
-    return Utility::isTextType($type, array('text', 'tokenized_text', 'string', ''));
-  }
 
   /**
    * {@inheritdoc}
@@ -42,11 +30,11 @@ class AddAggregation extends ProcessorPluginBase {
     $form = parent::buildConfigurationForm($form, $form_state);
 
     $form['description'] = array(
-      '#markup' => t('<p>This data alteration lets you define additional fields that will be added to this index. ' .
-        'Each of these new fields will be an aggregation of one or more existing fields.</p>' .
-        '<p>To add a new aggregated field, click the "Add new field" button and then fill out the form.</p>' .
-        '<p>To remove a previously defined field, click the "Remove field" button.</p>' .
-        '<p>You can also change the names or contained fields of existing aggregated fields.</p>'),
+      '#markup' => t('This data alteration lets you define additional fields that will be added to this index. ' .
+        'Each of these new fields will be an aggregation of one or more existing fields.</br>' .
+        'To add a new aggregated field, click the "Add new field" button and then fill out the form.</br>' .
+        'To remove a previously defined field, click the "Remove field" button. </br>' .
+        'You can also change the names or contained fields of existing aggregated fields.'),
     );
 
     $this->buildFieldsForm($form, $form_state);
@@ -71,6 +59,7 @@ class AddAggregation extends ProcessorPluginBase {
   }
 
   public function buildFieldsForm(array &$form, array &$form_state) {
+    // Check if we need to add a new form.
     if (isset($form_state['triggering_element']['#name'])) {
       $button_name = $form_state['triggering_element']['#name'];
       if ($button_name == 'add_aggregation_field') {
@@ -89,6 +78,28 @@ class AddAggregation extends ProcessorPluginBase {
       }
     }
 
+    // Get the aggregated fields.
+    $aggregated_fields = $this->getAggregatedFields($form, $form_state);
+    // Get index type descriptions.
+    $type_descriptions = $this->getTypeDescriptions();
+    $types = $this->getTypes();
+
+    // Get the available fields for this index.
+    $fields = $this->index->getFields(FALSE);
+    $field_options = array();
+    $field_properties = array();
+
+    // Annotate them so we can show them cleanly in the UI.
+    /** @var \Drupal\search_api\Item\FieldInterface[] $fields */
+    foreach ($fields as $field_id => $field) {
+      $field_options[$field_id] = $field->getLabel();
+      $field_properties[$field_id] = array(
+        '#attributes' => array('title' => $field_id),
+        '#description' => $field->getDescription(),
+      );
+    }
+
+    // Container for the aggregated field configurations
     $form['fields'] = array(
       '#type' => 'container',
       '#attributes' => array(
@@ -98,60 +109,31 @@ class AddAggregation extends ProcessorPluginBase {
       '#tree' => TRUE,
     );
 
-    $fields = $this->index->getFields(FALSE);
-    $field_options = array();
-    $field_properties = array();
-    /** @var \Drupal\search_api\Item\FieldInterface[] $fields */
-    foreach ($fields as $field_id => $field) {
 
-      $field_options[$field_id] = $field->getLabel();
-      $field_properties[$field_id] = array(
-        '#attributes' => array('title' => $field_id),
-        '#description' => $field->getDescription(),
-      );
-    }
-
-    $types = $this->getTypes();
-    $previous_type_descriptions = $this->getTypes('description');
-
-    $type_descriptions = array();
-    foreach ($types as $type => $name) {
-      $type_descriptions[$type] = array(
-        '#type' => 'item',
-        '#description' => $previous_type_descriptions[$type],
-      );
-    }
-
-    /** @var \Drupal\search_api\Item\FieldInterface[] $additional_fields */
-    $additional_fields = empty($this->configuration['fields']) ? array() : $this->configuration['fields'];
-    if (!empty($form_state['fields']) && is_array($form_state['fields'])) {
-      $additional_fields = array_merge($form_state['fields'], $additional_fields);
-    }
-
-    foreach ($additional_fields as $field_id => $field) {
+    foreach ($aggregated_fields as $field_id => $field) {
       $form['fields'][$field_id] = array(
         '#type' => 'fieldset',
-        '#title' => $field['label'] ? $field['label'] : t('New field'),
+        '#title' => isset($field['label']) ? $field['label'] : t('New field'),
         '#collapsible' => TRUE,
-        '#collapsed' => (boolean) $field['label'],
+        '#collapsed' => isset($field['label']),
       );
-      $form['fields'][$field_id]['name'] = array(
+      $form['fields'][$field_id]['label'] = array(
         '#type' => 'textfield',
         '#title' => t('New field name'),
-        '#default_value' => $field['label'],
+        '#default_value' => isset($field['label']) ? $field['label'] : t('New field'),
         '#required' => TRUE,
       );
       $form['fields'][$field_id]['type'] = array(
         '#type' => 'select',
         '#title' => t('Aggregation type'),
         '#options' => $types,
-        '#default_value' => $field['label'],
+        '#default_value' => '',
         '#required' => TRUE,
       );
 
       $form['fields'][$field_id]['type_descriptions'] = $type_descriptions;
       foreach (array_keys($types) as $type) {
-        $form['fields'][$field_id]['type_descriptions'][$type]['#states']['visible'][':input[name="callbacks[search_api_alter_add_aggregation][settings][fields][' . $field_id . '][type]"]']['value'] = $type;
+        $form['fields'][$field_id]['type_descriptions'][$type]['#states']['visible'][':input[name="callbacks[search_api_alter_aggregated_field][settings][fields][' . $field_id . '][type]"]']['value'] = $type;
       }
 
       $form['fields'][$field_id]['fields'] = array_merge($field_properties, array(
@@ -179,6 +161,7 @@ class AddAggregation extends ProcessorPluginBase {
       );
     }
   }
+
   /**
    * Button submit handler for tracker configure button 'tracker_configure' button.
    */
@@ -190,7 +173,7 @@ class AddAggregation extends ProcessorPluginBase {
    * Button submit handler for tracker configure button 'tracker_configure' button.
    */
   public static function buildAjaxAddFieldButton($form, &$form_state) {
-    return $form['processors']['settings']['add_aggregation']['fields'];
+    return $form['processors']['settings']['aggregated_field']['fields'];
   }
 
   /**
@@ -215,47 +198,91 @@ class AddAggregation extends ProcessorPluginBase {
    * {@inheritdoc}
    */
   public function preprocessIndexItems(array &$items) {
-    /*if (!$items) {
+    if (!$items) {
       return;
     }
     if (isset($this->configuration['fields'])) {
       $types = $this->getTypes('type');
+
+      /** @var \Drupal\search_api\Item\ItemInterface[] $items */
       foreach ($items as $item) {
-        $wrapper = $this->index->entityWrapper($item);
-        foreach ($this->configuration['fields'] as $field_id => $field) {
-          if ($field['label']) {
+        foreach ($this->configuration['fields'] as $aggregated_field_id => $aggregated_field) {
+          if ($aggregated_field['label']) {
+            // Extract the selected fields to aggregate from the settings
             $required_fields = array();
-            foreach ($field['fields'] as $f) {
-              if (!isset($required_fields[$f])) {
-                $required_fields[$f]['type'] = $types[$field['type']];
+            foreach ($aggregated_field['fields'] as $field_id_to_aggregate) {
+              // Only include valid and selected fields to aggregate
+              if (!isset($required_fields[$field_id_to_aggregate]) && !empty($field_id_to_aggregate)) {
+                // Make sure we only get fields from our current datasource type of the given item.
+                list($datasource_id) = Utility::splitCombinedId($field_id_to_aggregate);
+                if ($datasource_id == $item->getDatasourceId()) {
+                  $required_fields[$field_id_to_aggregate]['type'] = $types[$aggregated_field['type']];
+                }
               }
             }
-            Utility::extractFields($wrapper, $required_fields);
+
+            // Get all the available fields
+            $given_fields = array();
+            foreach ($required_fields as $required_field_id => $required_field_type) {
+              $field = $item->getField($required_field_id);
+              if ($field instanceof \Drupal\search_api\Item\Field && $field->getValues()) {
+                $given_fields[$required_field_id] = $field;
+                unset($required_fields[$required_field_id]);
+              }
+            }
+
+            $missing_fields = array();
+            // Get all the missing fields
+            foreach ($required_fields as $required_field_id => $required_field_type) {
+              $field = Utility::createField($this->index, $required_field_id);
+              $missing_fields[$field->getPropertyPath()] = $field;
+            }
+            // Get the value from the original objects in to the fields
+            Utility::extractFields($item->getOriginalObject(), $missing_fields);
+
+            $fields = array_merge($given_fields, $missing_fields);
+
             $values = array();
-            foreach ($required_fields as $f) {
-              if (isset($f['value'])) {
-                $values[] = $f['value'];
-              }
+            /** @var \Drupal\search_api\Item\FieldInterface[] $fields */
+            foreach ($fields as $field) {
+              $values[] = $field->getValues();
             }
+
+            // Flatten the values array
             $values = $this->flattenArray($values);
 
-            $this->reductionType = $field['type'];
-            $item->{$field_id} = array_reduce($values, array($this, 'reduce'), NULL);
-            if ($field['type'] == 'count' && !$item->{$field_id}) {
-              $item->{$field_id} = 0;
+            // Get our reductionType
+            $this->reductionType = $aggregated_field['type'];
+
+            // If we want a union, it means a multivalued so we do not need to do a reduce
+            if ($this->reductionType != 'union') {
+              $values = array_reduce($values, array($this, 'reduce'), NULL);
+            }
+
+            // Set a failed count to zero
+            if ($this->reductionType == 'count' && empty($values)) {
+              $values = 0;
+            }
+
+            if($item->getField($aggregated_field_id) instanceof \Drupal\search_api\Item\FieldInterface ) {
+              $item->getField($aggregated_field_id)->setValues($values);
             }
           }
         }
       }
-    }*/
+    }
   }
 
   /**
    * Helper method for reducing an array to a single value.
+   *
+   * @param $a
+   * @param $b
+   * @return mixed|string
    */
   public function reduce($a, $b) {
     switch ($this->reductionType) {
-      case 'fulltext':
+      case 'concat':
         return isset($a) ? $a . "\n\n" . $b : $b;
       case 'sum':
         return $a + $b;
@@ -272,6 +299,8 @@ class AddAggregation extends ProcessorPluginBase {
 
   /**
    * Helper method for flattening a multi-dimensional array.
+   * @param array $data
+   * @return array
    */
   protected function flattenArray(array $data) {
     $ret = array();
@@ -323,6 +352,26 @@ class AddAggregation extends ProcessorPluginBase {
   }
 
   /**
+   * Helper method for getting the aggregated types description.
+   *
+   * @return array
+   *   An array of the aggregated types with the description.
+   */
+  protected function getTypeDescriptions() {
+    $types = $this->getTypes();
+    $previous_type_descriptions = $this->getTypes('description');
+
+    $type_descriptions = array();
+    foreach ($types as $type => $name) {
+      $type_descriptions[$type] = array(
+        '#type' => 'item',
+        '#description' => $previous_type_descriptions[$type],
+      );
+    }
+    return $type_descriptions;
+  }
+
+  /**
    * Helper method for getting information about available aggregation types.
    *
    * @param string $info
@@ -337,7 +386,8 @@ class AddAggregation extends ProcessorPluginBase {
     switch ($info) {
       case 'name':
         return array(
-          'fulltext' => t('Fulltext'),
+          'union' => t('Union'),
+          'concat' => t('Concatenation'),
           'sum' => t('Sum'),
           'count' => t('Count'),
           'max' => t('Maximum'),
@@ -346,7 +396,8 @@ class AddAggregation extends ProcessorPluginBase {
         );
       case 'type':
         return array(
-          'fulltext' => 'string',
+          'union' => 'string',
+          'concat' => 'string',
           'sum' => 'integer',
           'count' => 'integer',
           'max' => 'integer',
@@ -355,7 +406,8 @@ class AddAggregation extends ProcessorPluginBase {
         );
       case 'description':
         return array(
-          'fulltext' => t('The Fulltext aggregation concatenates the text data of all contained fields.'),
+          'union' => t('The Union aggregation does an union operation of all the values of the field. 2 items with 2 fields become 1 item with 4 fields.'),
+          'concat' => t('The Concatenation aggregation concatenates the text data of all contained fields.'),
           'sum' => t('The Sum aggregation adds the values of all contained fields numerically.'),
           'count' => t('The Count aggregation takes the total number of contained field values as the aggregated field value.'),
           'max' => t('The Maximum aggregation computes the numerically largest contained field value.'),
@@ -366,5 +418,21 @@ class AddAggregation extends ProcessorPluginBase {
     return array();
   }
 
+
+  /**
+   * Helper method to get the Aggregated Fields that should be listed.
+   *
+   * @param array $form
+   * @param array $form_state
+   *
+   * @return array
+   */
+  protected function getAggregatedFields(array &$form, array &$form_state) {
+    $additional_fields = empty($this->configuration['fields']) ? array() : $this->configuration['fields'];
+    if (!empty($form_state['fields']) && is_array($form_state['fields'])) {
+      $additional_fields = array_merge($form_state['fields'], $additional_fields);
+    }
+    return $additional_fields;
+  }
 
 }
