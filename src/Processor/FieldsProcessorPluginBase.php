@@ -90,12 +90,11 @@ abstract class FieldsProcessorPluginBase extends ProcessorPluginBase {
    *
    * Calls processField() for all fields for which testField() returns TRUE.
    *
-   * @param array $items
+   * @param \Drupal\search_api\Item\ItemInterface[] $items
    *   An array of items to be preprocessed for indexing, formatted as specified
    *   by \Drupal\search_api\Backend\BackendSpecificInterface::indexItems().
    */
   public function preprocessIndexItems(array &$items) {
-    /** @var \Drupal\search_api\Item\ItemInterface $item */
     foreach ($items as $item) {
       /** @var \Drupal\search_api\Item\FieldInterface $field */
       foreach ($item as $name => $field) {
