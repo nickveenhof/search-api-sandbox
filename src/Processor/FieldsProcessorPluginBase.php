@@ -97,6 +97,7 @@ abstract class FieldsProcessorPluginBase extends ProcessorPluginBase {
   public function preprocessIndexItems(array &$items) {
     foreach ($items as $item) {
       /** @var \Drupal\search_api\Item\FieldInterface $field */
+      /* @var $field \Drupal\search_api\Item\FieldInterface */
       foreach ($item as $name => $field) {
         if ($this->testField($name, $field)) {
           $this->processField($field);
