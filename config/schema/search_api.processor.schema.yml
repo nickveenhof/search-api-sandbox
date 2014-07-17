@@ -12,6 +12,28 @@ search_api.processor.plugin.aggregated_field:
             label:
               type: string
               label: 'Label of the field that needs to be aggregated'
+            type:
+              type: string
+              label: 'action that needs to be taken on the aggregated fields'
+            type_descriptions:
+              type: sequence
+              label: 'Descriptions of the action that can be taken on the different fields'
+              sequence:
+                - type: string
+                  label: 'Description of the action that can be taken on the different fields'
+            fields:
+              type: sequence
+              label: 'Selected fields'
+              sequence:
+                #@todo set it to something that is valid for checkboxes. As 0 is not recognized in the string validation
+                - type: ignore
+                  label: 'The fields that need to be aggregated'
+            actions:
+              type: sequence
+              label: 'The required action to take'
+              sequence:
+                - type: string
+                  label: 'Submit button'
     label:
       type: string
       label: 'Label'
@@ -23,7 +45,7 @@ search_api.processor.plugin.aggregated_field:
       label: 'The required action to take'
       sequence:
         - type: string
-          label: "Submit button"
+          label: 'Submit button'
 
 search_api.processor.plugin.highlight:
   type: mapping
@@ -208,6 +230,19 @@ search_api.processor.plugin.ignore_character:
       sequence:
         - type: string
           label: 'Selected field'
+    ignorable:
+      type: string
+      label: 'Regular expression for characters it should ignore to stem'
+    strip:
+      type: mapping
+      label: 'Configurable characters to ignore'
+      mapping:
+        character_sets:
+          type: sequence
+          label: 'Configuration of the character sets'
+          sequence:
+            - type: ignore
+              label: 'Character set'
 
 search_api.processor.plugin.add_url:
   type: mapping
