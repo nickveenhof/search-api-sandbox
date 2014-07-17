@@ -21,6 +21,19 @@ search_api.index.*:
       type: mapping
       label: 'Options'
       mapping:
+        fields:
+          type: sequence
+          label: 'Configured fields'
+          sequence:
+            - type: mapping
+              label: field
+              mapping:
+                type:
+                  type: string
+                  label: "Type of field"
+        additional fields:
+          type: sequence
+          label: 'Configured fields'
         cron_limit:
           type: integer
           label: 'Cron batch size'

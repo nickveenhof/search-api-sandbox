@@ -1,14 +1,14 @@
 <?php
 /**
  * @file
- * Contains \Drupal\search_api\Tests\Plugin\Processor\AddUrlTest.
+ * Contains \Drupal\search_api\Tests\Plugin\Processor\UrlFieldTest.
  */
 
 namespace Drupal\search_api\Tests\Plugin\Processor;
 
 use Drupal\Core\TypedData\DataDefinitionInterface;
 use Drupal\search_api\Index\IndexInterface;
-use Drupal\search_api\Plugin\SearchApi\Processor\AddURL;
+use Drupal\search_api\Plugin\SearchApi\Processor\UrlField;
 use Drupal\search_api\Tests\Processor\TestItemsTrait;
 use Drupal\Tests\UnitTestCase;
 
@@ -17,16 +17,16 @@ use Drupal\Tests\UnitTestCase;
  *
  * @group search_api
  *
- * @see \Drupal\search_api\Plugin\SearchApi\Processor\AddURL
+ * @see \Drupal\search_api\Plugin\SearchApi\Processor\UrlField
  */
-class AddUrlTest extends UnitTestCase {
+class UrlFieldTest extends UnitTestCase {
 
   use TestItemsTrait;
 
   /**
    * Stores the processor to be tested.
    *
-   * @var \Drupal\search_api\Plugin\SearchApi\Processor\AddURL
+   * @var \Drupal\search_api\Plugin\SearchApi\Processor\UrlField
    */
   protected $processor;
 
@@ -67,7 +67,7 @@ class AddUrlTest extends UnitTestCase {
       ->will($this->returnValue($datasource));
 
     // Create the URL-Processor and set the mocked indexer.
-    $this->processor = new AddURL(array(), 'add_url', array());
+    $this->processor = new UrlField(array(), 'add_url', array());
     $this->processor->setIndex($index);
     /** @var \Drupal\Core\StringTranslation\TranslationInterface $translation */
     $translation = $this->getStringTranslationStub();

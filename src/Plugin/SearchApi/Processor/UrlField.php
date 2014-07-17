@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\search_api\Plugin\SearchApi\Processor\AddURL.
+ * Contains \Drupal\search_api\Plugin\SearchApi\Processor\UrlField.
  */
 
 namespace Drupal\search_api\Plugin\SearchApi\Processor;
@@ -18,7 +18,7 @@ use Drupal\search_api\Processor\ProcessorPluginBase;
  *   description = @Translation("Adds the item's URL to the indexed data.")
  * )
  */
-class AddURL extends ProcessorPluginBase {
+class UrlField extends ProcessorPluginBase {
 
   /**
    * {@inheritdoc}
@@ -39,8 +39,6 @@ class AddURL extends ProcessorPluginBase {
    * {@inheritdoc}
    */
   public function preprocessIndexItems(array &$items) {
-    // Annoyingly, this doc comment is needed for PHPStorm. See
-    // http://youtrack.jetbrains.com/issue/WI-23586
     /** @var \Drupal\search_api\Item\ItemInterface $item */
     foreach ($items as $item) {
       // Only run if the field is enabled for the index.

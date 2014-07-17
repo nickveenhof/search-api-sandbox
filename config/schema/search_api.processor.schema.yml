@@ -6,14 +6,24 @@ search_api.processor.plugin.aggregated_field:
       type: sequence
       label: 'The selected fields'
       sequence:
-        - type: string
+        - type: mapping
           label: 'The field name'
+          mapping:
+            label:
+              type: string
+              label: 'Label of the field that needs to be aggregated'
     label:
       type: string
       label: 'Label'
     type:
       type: string
       label: 'Type'
+    actions:
+      type: sequence
+      label: 'The required action to take'
+      sequence:
+        - type: string
+          label: "Submit button"
 
 search_api.processor.plugin.highlight:
   type: mapping
@@ -137,10 +147,71 @@ search_api.processor.plugin.tokenizer:
     ignorable:
       type: string
       label: 'Regular expression for ignorables'
+    overlap_cjk:
+      type: integer
+      label: 'Defines if the CJK should be configured to enable overlap.'
+    minimum_word_size:
+      type: string
+      label: 'Defines the minimum word size'
 
 search_api.processor.plugin.transliteration:
   type: mapping
   label: 'Transliteration processor configuration'
+  mapping:
+    fields:
+      type: sequence
+      label: 'The selected fields'
+      sequence:
+        - type: string
+          label: 'Selected field'
+
+search_api.processor.plugin.node_status:
+  type: mapping
+  label: 'node status processor configuration'
+  mapping:
+    fields:
+      type: sequence
+      label: 'The selected fields'
+      sequence:
+        - type: string
+          label: 'Selected field'
+
+search_api.processor.plugin.language:
+  type: mapping
+  label: 'Language field processor configuration'
+  mapping:
+    fields:
+      type: sequence
+      label: 'The selected fields'
+      sequence:
+        - type: string
+          label: 'Selected field'
+
+search_api.processor.plugin.content_access:
+  type: mapping
+  label: 'content access processor configuration'
+  mapping:
+    fields:
+      type: sequence
+      label: 'The selected fields'
+      sequence:
+        - type: string
+          label: 'Selected field'
+
+search_api.processor.plugin.ignore_character:
+  type: mapping
+  label: 'content access processor configuration'
+  mapping:
+    fields:
+      type: sequence
+      label: 'The selected fields'
+      sequence:
+        - type: string
+          label: 'Selected field'
+
+search_api.processor.plugin.add_url:
+  type: mapping
+  label: 'content access processor configuration'
   mapping:
     fields:
       type: sequence
