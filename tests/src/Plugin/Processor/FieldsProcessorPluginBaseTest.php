@@ -174,17 +174,40 @@ class FieldsProcessorPluginBaseTest extends UnitTestCase {
    */
   public function testProcessKeyOverride() {
     $override = function (&$value) {
-      $value = "&$value";
+      if ($value != 'baz') {
+        $value = "&$value";
+      }
+      else {
+        $value = '';
+      }
     };
     $this->processor->setMethodOverride('processKey', $override);
 
     $query = Utility::createQuery($this->index);
     $keys = & $query->getKeys();
-    $keys = 'foo';
+    $keys = array(
+      '#conjunction' => 'OR',
+      'foo',
+      array(
+        '#conjunction' => 'AND',
+        'bar',
+        'baz',
+        '#negation' => TRUE,
+      ),
+    );
 
     $this->processor->preprocessSearchQuery($query);
 
-    $this->assertEquals('&foo', $query->getKeys(), 'Search keys were correctly preprocessed.');
+    $expected = array(
+      '#conjunction' => 'OR',
+      '&foo',
+      array(
+        '#conjunction' => 'AND',
+        '&bar',
+        '#negation' => TRUE,
+      ),
+    );
+    $this->assertEquals($expected, $query->getKeys(), 'Search keys were correctly preprocessed.');
   }
 
   /**
@@ -202,6 +225,52 @@ class FieldsProcessorPluginBaseTest extends UnitTestCase {
       array('text_field', '*foo', '='),
       array('string_field', 'undefined', '<>'),
       array('integer_field', 'bar', '='),
+    );
+    $this->assertEquals($expected, $query->getFilter()->getFilters(), 'Filters were preprocessed correctly.');
+  }
+
+  /**
+   * Tests whether preprocessing nested search filters works correctly.
+   */
+  public function testProcessFiltersNestedFilter() {
+    $query = Utility::createQuery($this->index);
+    $filter = $query->createFilter();
+    $filter->condition('text_field', 'foo');
+    $filter->condition('string_field', NULL, '<>');
+    $filter->condition('integer_field', 'bar');
+    $query->filter($filter);
+
+    $this->processor->preprocessSearchQuery($query);
+
+    $expected = array(
+      array('text_field', '*foo', '='),
+      array('string_field', 'undefined', '<>'),
+      array('integer_field', 'bar', '='),
+    );
+    $this->assertEquals($expected, $query->getFilter()->getFilters()[0]->getFilters(), 'Filters were preprocessed correctly.');
+  }
+
+  /**
+   * Tests whether overriding processFilterValue() works correctly.
+   */
+  public function testProcessFilterValueOverride() {
+    $override = function (&$value) {
+      if (isset($value)) {
+        $value = '';
+      }
+    };
+    $this->processor->setMethodOverride('processFilterValue', $override);
+
+    $query = Utility::createQuery($this->index);
+    $query->condition('text_field', 'foo');
+    $query->condition('string_field', NULL, '<>');
+    $query->condition('integer_field', 'bar');
+
+    $this->processor->preprocessSearchQuery($query);
+
+    $expected = array(
+      1 => array('string_field', NULL, '<>'),
+      2 => array('integer_field', 'bar', '='),
     );
     $this->assertEquals($expected, $query->getFilter()->getFilters(), 'Filters were preprocessed correctly.');
   }
