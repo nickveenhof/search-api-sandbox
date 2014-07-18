@@ -23,6 +23,29 @@ class TestFieldsProcessorPlugin extends FieldsProcessorPluginBase {
   protected $methodOverrides = array();
 
   /**
+   * Creates a valid tokenized_text field value for testing purposes.
+   *
+   * @param string $value
+   *   The value to be tokenized.
+   * @param int|null $score
+   *   The score to set, or NULL to omit setting a score.
+   *
+   * @return array[]
+   *   A valid tokenized_text field value.
+   */
+  public static function createTokenizedText($value, $score = 1) {
+    $return = array();
+    if (isset($score)) {
+      $token['score'] = $score;
+    }
+    foreach (explode(' ', $value) as $word) {
+      $token['value'] = $word;
+      $return[] = $token;
+    }
+    return $return;
+  }
+
+  /**
    * Overrides a method in this processor.
    *
    * @param string $method

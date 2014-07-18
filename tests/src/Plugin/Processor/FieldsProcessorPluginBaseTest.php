@@ -99,6 +99,7 @@ class FieldsProcessorPluginBaseTest extends UnitTestCase {
    */
   public function testProcessFieldValueOverride() {
     $override = function (&$value, &$type) {
+      // Check whether the passed $type matches the one included in the value.
       if (strpos($value, "{$type}_field") !== FALSE) {
         $value = "&$value";
       }
@@ -111,6 +112,91 @@ class FieldsProcessorPluginBaseTest extends UnitTestCase {
     $items = $this->getTestItem();
     $this->processor->preprocessIndexItems($items);
     $this->verifyFieldsProcessed($items, array('text_field', 'string_field'), '&');
+  }
+
+  /**
+   * Tests whether overriding of processFieldValue() works correctly.
+   */
+  public function testProcessFieldRemoveValue() {
+    $override = function (&$value) {
+      if ($value != 'bar') {
+        $value = "*$value";
+      }
+      else {
+        $value = '';
+      }
+    };
+    $this->processor->setMethodOverride('processFieldValue', $override);
+
+    $fields = array(
+      'field1' => array(
+        'type' => 'string',
+        'values' => array(
+          'foo',
+          'bar',
+        ),
+      ),
+    );
+    $items = $this->createItems($this->index, 1, $fields);
+
+    $this->processor->preprocessIndexItems($items);
+
+    $item_fields = $items[$this->item_ids[0]]->getFields();
+    $this->assertEquals(array('*foo'), $item_fields['field1']->getValues(), 'tokenized_text field correctly processed.');
+  }
+
+  /**
+   * Tests whether tokenized text is handled correctly.
+   */
+  public function testProcessFieldsTokenized() {
+    $override = function (&$value, &$type) {
+      if ($type != 'tokenized_text') {
+        $value = TestFieldsProcessorPlugin::createTokenizedText($value, NULL);
+        $type = 'tokenized_text';
+      }
+      elseif ($value == 'bar') {
+        $value = array(array('value' => '*bar'));
+      }
+      elseif ($value != 'baz') {
+        $value = "*$value";
+      }
+      else {
+        $value = '';
+      }
+    };
+    $this->processor->setMethodOverride('processFieldValue', $override);
+
+    $fields = array(
+      'field1' => array(
+        'type' => 'tokenized_text',
+        'values' => array(
+          TestFieldsProcessorPlugin::createTokenizedText('foo bar baz', 3),
+          TestFieldsProcessorPlugin::createTokenizedText('foobar'),
+        ),
+      ),
+      'field2' => array(
+        'type' => 'text',
+        'values' => array(
+          'foo bar baz',
+          'foobar',
+        ),
+      ),
+    );
+    $items = $this->createItems($this->index, 1, $fields);
+
+    $this->processor->preprocessIndexItems($items);
+
+    $item_fields = $items[$this->item_ids[0]]->getFields();
+    $expected = array(
+      TestFieldsProcessorPlugin::createTokenizedText('*foo *bar', 3),
+      TestFieldsProcessorPlugin::createTokenizedText('*foobar'),
+    );
+    $this->assertEquals($expected, $item_fields['field1']->getValues(), 'tokenized_text field correctly processed.');
+    $expected = array(
+      TestFieldsProcessorPlugin::createTokenizedText('foo bar baz'),
+      TestFieldsProcessorPlugin::createTokenizedText('foobar'),
+    );
+    $this->assertEquals($expected, $item_fields['field2']->getValues(), 'text field correctly processed and tokenized.');
   }
 
   /**
@@ -269,10 +355,10 @@ class FieldsProcessorPluginBaseTest extends UnitTestCase {
     $this->processor->preprocessSearchQuery($query);
 
     $expected = array(
-      1 => array('string_field', NULL, '<>'),
-      2 => array('integer_field', 'bar', '='),
+      array('string_field', NULL, '<>'),
+      array('integer_field', 'bar', '='),
     );
-    $this->assertEquals($expected, $query->getFilter()->getFilters(), 'Filters were preprocessed correctly.');
+    $this->assertEquals($expected, array_merge($query->getFilter()->getFilters()), 'Filters were preprocessed correctly.');
   }
 
   /**
