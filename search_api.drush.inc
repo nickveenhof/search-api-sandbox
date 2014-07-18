@@ -156,14 +156,23 @@ function drush_search_api_list() {
   );
   /** @var $index \Drupal\search_api\Entity\Index */
   foreach ($indexes as $index) {
-    $plugin_info = \Drupal::service('plugin.manager.search_api.datasource')->getDefinition($index->datasourcePluginId, FALSE);
+    foreach ($index->getDatasourceIds() as $datasource_id) {
+      // Check if a datasource is available.
+      if ($index->isValidDatasource($datasource_id)) {
+        // Use the label defined in the plugin definition.
+        $info = $index->getDatasource($datasource_id)->getPluginDefinition()['label'];
+      }
+      else {
+        $info = t('Invalid or missing datasource plugin: %datasource_id', array('%datasource_id' => $datasource_id));
+      }
+    }
     $row = array(
       $index->machine_name,
       $index->name,
       $index->getServerId() ?: '(' . t('none') . ')',
-      $plugin_info['label'],
+      (string) $info,
       $index->status() ? t('enabled') : t('disabled'),
-      $index->getOption('cron_limit'),
+      (int) $index->getOption('cron_limit'),
     );
     $rows[] = $row;
   }
@@ -183,6 +192,11 @@ function drush_search_api_enable() {
   }
 
   $index_names = func_get_args();
+
+  if (!count($index_names)) {
+    drush_set_error(dt('You must specify at least one index to enable. The indexes I know about are:'));
+    drush_search_api_list();
+  }
 
   foreach ($index_names as $index_name) {
     $indexes = search_api_drush_get_indexes_or_display_list($index_name);
@@ -206,16 +220,19 @@ function drush_search_api_enable_all() {
 /**
  * Disable index(es).
  *
- * @param string $index_machine_name
- *   Optional machine name for index to be disabled. If absent - disable all.
  */
-function drush_search_api_disable($index_name) {
+function drush_search_api_disable() {
   if (!search_api_drush_get_index_count()) {
-    drush_set_error(dt('There are no indexes defined. Please define an index before trying to enable it'));
+    drush_set_error(dt('There are no indexes defined. Please define an index before trying to disable it'));
     return;
   }
 
   $index_names = func_get_args();
+
+  if (!count($index_names)) {
+    drush_set_error(dt('You must specify at least one index to disable. The indexes I know about are:'));
+    drush_search_api_list();
+  }
 
   foreach ($index_names as $index_name) {
     $indexes = search_api_drush_get_indexes_or_display_list($index_name);

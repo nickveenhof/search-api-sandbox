@@ -7,120 +7,123 @@
 
 namespace Drupal\search_api\Tests\Plugin\Processor;
 
-use Drupal\Component\Utility\String;
 use Drupal\search_api\Plugin\SearchApi\Processor\IgnoreCharacter;
 use Drupal\Tests\UnitTestCase;
 
 /**
- * Tests the "Ignore Character" processor plugin.
+ * Tests the "Ignore characters" processor.
  *
- * @group Drupal
  * @group search_api
  *
  * @see \Drupal\search_api\Plugin\SearchApi\Processor\IgnoreCharacter
  */
 class IgnoreCharacterTest extends UnitTestCase {
 
-  /**
-   * {@inheritdoc}
-   */
-  public static function getInfo() {
-    return array(
-      'name' => 'Ignore case Processor Plugin',
-      'description' => 'Unit test of processor ignores case of strings.',
-      'group' => 'Search API',
-    );
-  }
+  use ProcessorTestTrait;
 
   /**
    * {@inheritdoc}
    */
   protected function setUp() {
     parent::setUp();
-  }
 
-  /**
-   * Get an accessible method of TokenizerTest using reflection.
-   */
-  public function getAccessibleMethod($methodName) {
-    $class = new \ReflectionClass('Drupal\search_api\Plugin\SearchApi\Processor\IgnoreCharacter');
-    $method = $class->getMethod($methodName);
-    $method->setAccessible(TRUE);
-    return $method;
+    $this->processor = new IgnoreCharacter(array('ignorable' => ''), 'ignore_character', array());
   }
 
   /**
    * Test processFieldValue method with Punctuation Connector Ignores.
    *
-   * @dataProvider textCharacterSetsIgnoreCharacterDataProvider
+   * @dataProvider ignoreCharacterSetsDataProvider
    */
-  public function testCharacterSetsIgnoreCharacter($passedString, $expectedValue, $character_class) {
-    $tokenizerMock = $this->getMock('Drupal\search_api\Plugin\SearchApi\Processor\IgnoreCharacter',
-      array('processFieldValue'),
-      array(array('strip' => array('ignorable' => "['¿¡!?,.:;]", 'character_sets' => array($character_class => $character_class))), 'string', array()));
-
-    $processFieldValueMethod = $this->getAccessibleMethod('processFieldValue');
-    // Decode entities to UTF-8
-    $passedString = String::decodeEntities($passedString);
-    $processFieldValueMethod->invokeArgs($tokenizerMock, array(&$passedString, 'text'));
-    $this->assertEquals($passedString, $expectedValue);
+  public function testIgnoreCharacterSets($passedString, $expectedValue, $character_classes) {
+    $this->processor->setConfiguration(array('strip' => array('character_sets' => $character_classes)));
+    $this->invokeMethod('process', array(&$passedString, 'text'));
+    $this->assertEquals($expectedValue, $passedString);
   }
 
   /**
    * Data provider for testValueConfiguration().
    */
-  public function textCharacterSetsIgnoreCharacterDataProvider() {
+  public function ignoreCharacterSetsDataProvider() {
     return array(
-      array('word_s', 'words', 'Pc'),
-      array('word⁔s', 'words', 'Pc'),
+      array('word_s', 'words', array('Pc' => 'Pc')),
+      array('word⁔s', 'words', array('Pc' => 'Pc')),
 
-      array('word〜s', 'words', 'Pd'),
-      array('w–ord⸗s', 'words', 'Pd'),
+      array('word〜s', 'words', array('Pd' => 'Pd')),
+      array('w–ord⸗s', 'words', array('Pd' => 'Pd')),
 
-      array('word⌉s', 'words', 'Pe'),
-      array('word⦊s〕', 'words', 'Pe'),
+      array('word⌉s', 'words', array('Pe' => 'Pe')),
+      array('word⦊s〕', 'words', array('Pe' => 'Pe')),
 
-      array('word»s', 'words', 'Pf'),
-      array('word⸍s', 'words', 'Pf'),
+      array('word»s', 'words', array('Pf' => 'Pf')),
+      array('word⸍s', 'words', array('Pf' => 'Pf')),
 
-      array('word⸂s', 'words', 'Pi'),
-      array('w«ord⸉s', 'words', 'Pi'),
+      array('word⸂s', 'words', array('Pi' => 'Pi')),
+      array('w«ord⸉s', 'words', array('Pi' => 'Pi')),
 
-      array('words%', 'words', 'Po'),
-      array('wo*rd/s', 'words', 'Po'),
+      array('words%', 'words', array('Po' => 'Po')),
+      array('wo*rd/s', 'words', array('Po' => 'Po')),
 
-      array('word༺s', 'words', 'Ps'),
-      array('w❮ord⌈s', 'words', 'Ps'),
+      array('word༺s', 'words', array('Ps' => 'Ps')),
+      array('w❮ord⌈s', 'words', array('Ps' => 'Ps')),
 
-      array('word៛s', 'words', 'Sc'),
-      array('wo₥rd₦s', 'words', 'Sc'),
+      array('word៛s', 'words', array('Sc' => 'Sc')),
+      array('wo₥rd₦s', 'words', array('Sc' => 'Sc')),
 
-      array('w˓ords', 'words', 'Sk'),
-      array('wo˘rd˳s', 'words', 'Sk'),
+      array('w˓ords', 'words', array('Sk' => 'Sk')),
+      array('wo˘rd˳s', 'words', array('Sk' => 'Sk')),
 
-      array('word×s', 'words', 'Sm'),
-      array('wo±rd؈s', 'words', 'Sm'),
+      array('word×s', 'words', array('Sm' => 'Sm')),
+      array('wo±rd؈s', 'words', array('Sm' => 'Sm')),
 
-      array('wo᧧rds', 'words', 'So'),
-      array('w᧶ord᧲s', 'words', 'So'),
+      array('wo᧧rds', 'words', array('So' => 'So')),
+      array('w᧶ord᧲s', 'words', array('So' => 'So')),
 
-      //array('worœds', 'words', 'Cc'),
-      //array('woƒrds', 'words', 'Cc'),
+      array("wor\x0Ads", 'words', array('Cc' => 'Cc')),
+      array("wo\x0Crds", 'words', array('Cc' => 'Cc')),
 
-      array('word۝s', 'words', 'Cf'),
-      array('wo᠎rd؁s', 'words', 'Cf'),
+      array('word۝s', 'words', array('Cf' => 'Cf')),
+      array('wo᠎rd؁s', 'words', array('Cf' => 'Cf')),
 
-      array('words', 'words', 'Co'),
-      array('wo󿿽rds', 'words', 'Co'),
+      array('words', 'words', array('Co' => 'Co')),
+      array('wo󿿽rds', 'words', array('Co' => 'Co')),
 
-      array('wordॊs', 'words', 'Mc'),
-      array('worौdংs', 'words', 'Mc'),
+      array('wordॊs', 'words', array('Mc' => 'Mc')),
+      array('worौdংs', 'words', array('Mc' => 'Mc')),
 
-      array('wo⃞rds', 'words', 'Me'),
-      array('wor⃤⃟ds', 'words', 'Me'),
+      array('wo⃞rds', 'words', array('Me' => 'Me')),
+      array('wor⃤⃟ds', 'words', array('Me' => 'Me')),
 
-      array('woྰrds', 'words', 'Mn'),
-      array('worྵdྶs', 'words', 'Mn'),
+      array('woྰrds', 'words', array('Mn' => 'Mn')),
+      array('worྵdྶs', 'words', array('Mn' => 'Mn')),
+
+      array('woྰrds', 'words', array('Mn' => 'Mn', 'Pd' => 'Pd', 'Pe' => 'Pe')),
+      array('worྵdྶs', 'words', array('Mn' => 'Mn', 'Pd' => 'Pd', 'Pe' => 'Pe')),
+    );
+  }
+
+  /**
+   * Tests the processor if the "Ignorable characters" setting is used.
+   *
+   * @dataProvider ignorableCharactersDataProvider
+   */
+  public function testIgnorableCharacters($passedValue, $expectedValue, $ignorable) {
+    $this->processor->setConfiguration(array('ignorable' => $ignorable, 'strip' => array()));
+    $this->invokeMethod('process', array(&$passedValue, 'text'));
+    $this->assertEquals($expectedValue, $passedValue);
+  }
+
+  /**
+   * Provides sets of test parameters for testIgnorableCharacters().
+   *
+   * @return array
+   *   Sets of arguments for testIgnorableCharacters().
+   */
+  public function ignorableCharactersDataProvider() {
+    return array(
+      array('abcde', 'ace', '[bd]'),
+      array("ab.c'de", "a.'de", '[b-c]'),
+      array('foo 13$%& (bar)[93]', 'foo $%& (bar)[]', '\d'),
     );
   }
 

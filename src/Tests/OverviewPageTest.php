@@ -12,6 +12,8 @@ use Drupal\search_api\Server\ServerInterface;
 
 /**
  * Tests the Search API overview page.
+ *
+ * @group search_api
  */
 class OverviewPageTest extends SearchApiWebTestBase {
 
@@ -21,17 +23,6 @@ class OverviewPageTest extends SearchApiWebTestBase {
    * @var string
    */
   protected $overviewPageUrl;
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function getInfo() {
-    return array(
-      'name' => 'Search API overview page tests',
-      'description' => 'Test Search API overview page and what would be modified according to different server/index modifications.',
-      'group' => 'Search API',
-    );
-  }
 
   /**
    * {@inheritdoc}
@@ -70,10 +61,10 @@ class OverviewPageTest extends SearchApiWebTestBase {
     $edit = array(
       'name' => $this->randomName(),
       'machine_name' => Unicode::strtolower($this->randomName()),
-      'datasourcePluginIds[]' => 'entity:user',
+      'datasources[]' => 'entity:user',
     );
-    $this->drupalPostForm('admin/config/search/search-api/add-index', $edit, t('Save'));
-    $this->assertText(t('The index was successfully saved.'));
+    $this->drupalPostForm('admin/config/search/search-api/add-index', $edit, $this->t('Save'));
+    $this->assertText($this->t('The index was successfully saved.'));
     $this->assertText($edit['name']);
   }
 

@@ -18,8 +18,8 @@ use Drupal\search_api\Utility\Utility;
 /**
  * @SearchApiProcessor(
  *   id = "highlight",
- *   label = @Translation("Hightlight processor"),
- *   description = @Translation("Excerpt and field result hightlighting")
+ *   label = @Translation("Highlight"),
+ *   description = @Translation("Adds a highlighted excerpt to results and highlights returned fields.")
  * )
  */
 class Highlight extends ProcessorPluginBase {
@@ -128,6 +128,19 @@ class Highlight extends ProcessorPluginBase {
   /**
    * {@inheritdoc}
    */
+  public function validateConfigurationForm(array &$form, array &$form_state) {
+    parent::validateConfigurationForm($form, $form_state);
+
+    $minimum_excerpt_length = 50;
+    if ($form_state['values']['excerpt_length'] < $minimum_excerpt_length) {
+      $error_message = $this->t('The minimum excerpt length should be higher than !minimum_excerpt_length', array('!minimum_excerpt_length' => $minimum_excerpt_length));
+      \Drupal::formBuilder()->setError($form['excerpt_length'], $form_state, $error_message);
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function postprocessSearchResults(ResultSetInterface $results) {
     if (!$results->getResultCount() || !($keys = $this->getKeywords($results->getQuery()))) {
       return;
@@ -135,9 +148,7 @@ class Highlight extends ProcessorPluginBase {
 
     $result_items = $results->getResultItems();
     if ($this->configuration['excerpt']) {
-      foreach ($result_items as $id => $result) {
-        $this->postprocessExcerptResults($result_items, $id, $keys);
-      }
+      $this->postprocessExcerptResults($result_items, $keys);
     }
     if ($this->configuration['highlight'] != 'never') {
       $higlighted_fields = $this->postprocessFieldResults($result_items, $keys);
@@ -158,18 +169,23 @@ class Highlight extends ProcessorPluginBase {
    *
    * @param \Drupal\search_api\Item\ItemInterface[] $results
    *   All results returned by the search.
-   * @param string $id
-   *   The item ID of the item whose fields should be highlighted.
    * @param array $keys
    *   The search keys to use for highlighting.
    */
-  protected function postprocessExcerptResults(array $results, $id, array $keys) {
-    $text = array();
-    $fields = $this->getFulltextFields($results, $id);
-    foreach ($fields as $field) {
-      $text = array_merge($text, $field->getValues());
+  protected function postprocessExcerptResults(array $results, array $keys) {
+    $items = $this->getFulltextFields($results);
+    foreach ($items as $item_id => $item) {
+      $text = array();
+      /** @var \Drupal\search_api\Item\FieldInterface $field */
+      foreach ($item as $field) {
+        $text = array_merge($text, $field->getValues());
+      }
+      // @todo This is pretty poor handling for the borders between different
+      //   values/fields. Better would be to pass an array and have proper
+      //   handling of this in createExcerpt(), ensuring that no snippet goes
+      //   across multiple values/fields.
+      $results[$item_id]->setExcerpt($this->createExcerpt(implode($this->getEllipses()[1], $text), $keys));
     }
-    $results[$id]->setExcerpt($this->createExcerpt(implode("\n\n", $text), $keys));
   }
 
   /**
@@ -344,26 +360,37 @@ class Highlight extends ProcessorPluginBase {
    * @param array $keys
    *   Search keywords entered by the user.
    *
-   * @return string
-   *   A string containing HTML for the excerpt.
+   * @return string|null
+   *   A string containing HTML for the excerpt. Or NULL if no excerpt could be
+   *   created.
    */
-  // @todo Update to new D8 search_excerpt().
   protected function createExcerpt($text, array $keys) {
     // Prepare text by stripping HTML tags and decoding HTML entities.
     $text = strip_tags(str_replace(array('<', '>'), array(' <', '> '), $text));
-    $text = ' ' . String::decodeEntities($text);
-    // Extract fragments of about 60 characters around keywords, bounded by word
-    // boundary characters. Try to reach 256 characters, using second
-    // occurrences if necessary.
+    $text = String::decodeEntities($text);
+    $text = preg_replace('/\s+/', ' ', $text);
+    $text = trim($text, ' ');
+    $text_length = strlen($text);
+
+    // Try to reach the requested excerpt length with about two fragments (each
+    // with a keyword and some context).
     $ranges = array();
     $length = 0;
     $look_start = array();
     $remaining_keys = $keys;
 
-    while ($length < 256 && !empty($remaining_keys)) {
+    // Get the set excerpt length from the configuration. If the length is too
+    // small, only use one fragment.
+    $excerpt_length = $this->configuration['excerpt_length'];
+    $context_length = round($excerpt_length / 4) - 3;
+    if ($context_length < 32) {
+      $context_length = round($excerpt_length / 2) - 1;
+    }
+
+    while ($length < $excerpt_length && !empty($remaining_keys)) {
       $found_keys = array();
       foreach ($remaining_keys as $key) {
-        if ($length >= 256) {
+        if ($length >= $excerpt_length) {
           break;
         }
 
@@ -384,15 +411,25 @@ class Highlight extends ProcessorPluginBase {
           // pass through again to find more text.
           $found_keys[] = $key;
 
-          // Locate a space before and after this match, leaving about 60
-          // characters of context on each end.
-          $before = strpos(' ' . $text, ' ', max(0, $found_position - 61));
+          // Locate a space before and after this match, leaving some context on
+          // each end.
+          if ($found_position > $context_length) {
+            $before = strpos($text, ' ', $found_position - $context_length);
+            if ($before !== FALSE) {
+              ++$before;
+            }
+          }
+          else {
+            $before = 0;
+          }
           if ($before !== FALSE && $before <= $found_position) {
-            $after = strpos($text . ' ', ' ', min($found_position + 61, strlen($text)));
+            if ($text_length > $found_position + $context_length) {
+              $after = strrpos(substr($text, 0, $found_position + $context_length), ' ', $found_position);
+            }
+            else {
+              $after = $text_length;
+            }
             if ($after !== FALSE && $after > $found_position) {
-              // Account for the spaces we added.
-              $before = max($before - 1, 0);
-              $after = min($after, strlen($text));
               if ($before < $after) {
                 // Save this range.
                 $ranges[$before] = $after;
@@ -407,7 +444,7 @@ class Highlight extends ProcessorPluginBase {
       $remaining_keys = $found_keys;
     }
 
-    if (empty($ranges)) {
+    if (!$ranges) {
       // We didn't find any keyword matches, return NULL.
       return NULL;
     }
@@ -418,9 +455,10 @@ class Highlight extends ProcessorPluginBase {
     // Collapse overlapping text ranges into one. The sorting makes it O(n).
     $new_ranges = array();
     $max_end = 0;
+    $working_from = $working_to = NULL;
     foreach ($ranges as $this_from => $this_to) {
       $max_end = max($max_end, $this_to);
-      if (!isset($working_from)) {
+      if (is_null($working_from)) {
         // This is the first time through this loop: initialize.
         $working_from = $this_from;
         $working_to = $this_to;
@@ -431,7 +469,8 @@ class Highlight extends ProcessorPluginBase {
         $working_to = max($working_to, $this_to);
       }
       else {
-        // The ranges do not overlap save the working range and start a new one.
+        // The ranges do not overlap: save the working range and start a new
+        // one.
         $new_ranges[$working_from] = $working_to;
         $working_from = $this_from;
         $working_to = $this_to;
@@ -443,16 +482,16 @@ class Highlight extends ProcessorPluginBase {
     // Fetch text within the combined ranges we found.
     $out = array();
     foreach ($new_ranges as $from => $to) {
-      $out[] = substr($text, $from, $to - $from);
+      $out[] = String::checkPlain(substr($text, $from, $to - $from));
+    }
+    if (!$out) {
+      return NULL;
     }
 
-    // Combine the text chunks with "..." separators. The "..." needs to be
-    // translated. Let translators have the ... separator text as one chunk.
-    $dots = explode('!excerpt', $this->t('... !excerpt ... !excerpt ...'));
-    $text = (isset($new_ranges[0]) ? '' : $dots[0]) . implode($dots[1], $out) . (($max_end < strlen($text) - 1) ? $dots[2] : '');
-    $text = String::checkPlain($text);
+    $ellipses = $this->getEllipses();
+    $excerpt = $ellipses[0] . implode($ellipses[1], $out) . $ellipses[2];
 
-    return $this->highlightField($text, $keys);
+    return $this->highlightField($excerpt, $keys);
   }
 
   /**
@@ -471,6 +510,25 @@ class Highlight extends ProcessorPluginBase {
     $keys = implode('|', array_map('preg_quote', $keys, array_fill(0, count($keys), '/')));
     $text = preg_replace('/' . self::$boundary . '(' . $keys . ')' . self::$boundary . '/iu', $replace, ' ' . $text . ' ');
     return trim($text);
+  }
+
+  /**
+   * Retrieves the translated separators for excerpts.
+   *
+   * Defaults to Unicode ellipses (…) on all positions.
+   *
+   * @return string[]
+   *   A numeric array containing three elements: the separator to put at the
+   *   front of the excerpt (if that is not the front of the string), the
+   *   separator to put in between different portions of the text, and the
+   *   separator to append at the end of the excerpt if it doesn't end with the
+   *   end of the text.
+   */
+  protected function getEllipses() {
+    // Combine the text chunks with "…" separators. The "…" needs to be
+    // translated. Let translators have the … separator text as one chunk.
+    $ellipses = explode('!excerpt', $this->t('… !excerpt … !excerpt …'));
+    return $ellipses;
   }
 
 }

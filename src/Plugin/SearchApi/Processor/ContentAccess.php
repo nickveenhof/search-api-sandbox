@@ -9,6 +9,7 @@ namespace Drupal\search_api\Plugin\SearchApi\Processor;
 
 use Drupal\comment\CommentInterface;
 use Drupal\comment\Entity\Comment;
+use Drupal\Component\Utility\String;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\Core\TypedData\ComplexDataInterface;
@@ -22,9 +23,9 @@ use Drupal\search_api\Query\QueryInterface;
 
 /**
  * @SearchApiProcessor(
- *   id = "search_api_content_access_processor",
- *   label = @Translation("Content access processor"),
- *   description = @Translation("Adds access information to node and comment indexes")
+ *   id = "content_access",
+ *   label = @Translation("Content access"),
+ *   description = @Translation("Adds content access checks for nodes and comments.")
  * )
  */
 class ContentAccess extends ProcessorPluginBase {
@@ -51,8 +52,8 @@ class ContentAccess extends ProcessorPluginBase {
 
     if (in_array($datasource->getEntityTypeId(), array('node', 'comment'))) {
       $definition = array(
-        'label' => t('Node access information'),
-        'description' => t('Data needed to apply node access.'),
+        'label' => $this->t('Node access information'),
+        'description' => $this->t('Data needed to apply node access.'),
         'type' => 'string',
       );
       $properties['search_api_node_grants'] = new DataDefinition($definition);
@@ -147,7 +148,7 @@ class ContentAccess extends ProcessorPluginBase {
   public function preprocessSearchQuery(QueryInterface $query) {
     $processors = $this->index->getOption('processors');
 
-    if (!empty($processors['search_api_content_access_processor']['status']) && !$query->getOption('search_api_bypass_access')) {
+    if (!empty($processors['content_access']['status']) && !$query->getOption('search_api_bypass_access')) {
       $account = $query->getOption('search_api_access_account', \Drupal::currentUser());
       if (is_numeric($account)) {
         $account = entity_load('user', $account);
@@ -215,7 +216,7 @@ class ContentAccess extends ProcessorPluginBase {
       if (empty($fields[$field])) {
         $vars['@field'] = $field;
         $vars['@index'] = $query->getIndex()->label();
-        throw new SearchApiException(t('Required field @field not indexed on index @index. Could not perform access checks.', $vars));
+        throw new SearchApiException(String::format('Required field @field not indexed on index @index. Could not perform access checks.', $vars));
       }
     }
 

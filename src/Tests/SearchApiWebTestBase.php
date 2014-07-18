@@ -7,12 +7,15 @@
 
 namespace Drupal\search_api\Tests;
 
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\simpletest\WebTestBase;
 
 /**
  * Provides the base class for web tests for Search API.
  */
 abstract class SearchApiWebTestBase extends WebTestBase {
+
+  use StringTranslationTrait;
 
   /**
    * Modules to enable.
@@ -93,7 +96,7 @@ abstract class SearchApiWebTestBase extends WebTestBase {
       }
     }
     else {
-      $server = entity_create('search_api_server', array('name' => $name, 'machine_name' => $machine_name, 'backendPluginId' => $backend_id));
+      $server = entity_create('search_api_server', array('name' => $name, 'machine_name' => $machine_name, 'backend' => $backend_id));
       $server->description = $name;
       $server->save();
     }
@@ -117,7 +120,7 @@ abstract class SearchApiWebTestBase extends WebTestBase {
       }
     }
     else {
-      $index = entity_create('search_api_index', array('name' => $name, 'machine_name' => $machine_name, 'datasourcePluginId' => $datasource_plugin_id, 'serverMachineName' => $server_id));
+      $index = entity_create('search_api_index', array('name' => $name, 'machine_name' => $machine_name, 'datasourcePluginId' => $datasource_plugin_id, 'server' => $server_id));
       $index->description = $name;
       $index->save();
     }

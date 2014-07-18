@@ -7,9 +7,9 @@
 
 namespace Drupal\search_api\Entity;
 
+use Drupal\Component\Utility\String;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\search_api\Exception\SearchApiException;
 use Drupal\search_api\Index\IndexInterface;
 use Drupal\search_api\Query\QueryInterface;
@@ -51,7 +51,7 @@ use Drupal\search_api\Utility\Utility;
  *   }
  * )
  */
-class Server extends ConfigEntityBase implements ServerInterface, PluginFormInterface {
+class Server extends ConfigEntityBase implements ServerInterface {
 
   /**
    * The machine name of the server.
@@ -68,13 +68,6 @@ class Server extends ConfigEntityBase implements ServerInterface, PluginFormInte
   public $name;
 
   /**
-   * The server UUID.
-   *
-   * @var string
-   */
-  public $uuid;
-
-  /**
    * The displayed description for a server.
    *
    * @var string
@@ -86,14 +79,14 @@ class Server extends ConfigEntityBase implements ServerInterface, PluginFormInte
    *
    * @var string
    */
-  public $backendPluginId;
+  protected $backend;
 
   /**
    * The backend plugin configuration.
    *
    * @var array
    */
-  public $backendPluginConfig = array();
+  protected $backend_config = array();
 
   /**
    * The backend plugin instance.
@@ -138,7 +131,7 @@ class Server extends ConfigEntityBase implements ServerInterface, PluginFormInte
    * {@inheritdoc}
    */
   public function getBackendId() {
-    return $this->backendPluginId;
+    return $this->backend;
   }
 
   /**
@@ -151,7 +144,7 @@ class Server extends ConfigEntityBase implements ServerInterface, PluginFormInte
       $backend_plugin_manager = \Drupal::service('plugin.manager.search_api.backend');
 
       // Try to create a backend plugin instance.
-      $config = $this->backendPluginConfig;
+      $config = $this->backend_config;
       $config['server'] = $this;
       if (!($this->backendPluginInstance = $backend_plugin_manager->createInstance($this->getBackendId(), $config))) {
         $args['@backend'] = $this->getBackendId();
@@ -171,11 +164,11 @@ class Server extends ConfigEntityBase implements ServerInterface, PluginFormInte
     // Check if the backend is valid.
     if ($this->hasValidBackend()) {
       // Overwrite the backend plugin configuration with the active.
-      $properties['backendPluginConfig'] = $this->getBackend()->getConfiguration();
+      $properties['backend_config'] = $this->getBackend()->getConfiguration();
     }
     else {
       // Clear the backend plugin configuration.
-      $properties['backendPluginConfig'] = array();
+      $properties['backend_config'] = array();
     }
     return $properties;
   }
@@ -188,7 +181,7 @@ class Server extends ConfigEntityBase implements ServerInterface, PluginFormInte
     parent::preDelete($storage, $entities);
     // Get the indexes associated with the servers.
     $index_ids = \Drupal::entityQuery('search_api_index')
-      ->condition('serverMachineName', array_keys($entities), 'IN')
+      ->condition('server', array_keys($entities), 'IN')
       ->execute();
     // Load the related indexes.
     $indexes = \Drupal::entityManager()->getStorage('search_api_index')->loadMultiple($index_ids);
@@ -211,31 +204,6 @@ class Server extends ConfigEntityBase implements ServerInterface, PluginFormInte
       }
       // Delete all remaining tasks for the server.
       Utility::getServerTaskManager()->delete(NULL, $server);
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function buildConfigurationForm(array $form, array &$form_state) {
-    return $this->hasValidBackend() ? $this->getBackend()->buildConfigurationForm($form, $form_state) : array();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function validateConfigurationForm(array &$form, array &$form_state) {
-    if ($this->hasValidBackend()) {
-      $this->getBackend()->validateConfigurationForm($form, $form_state);
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function submitConfigurationForm(array &$form, array &$form_state) {
-    if ($this->hasValidBackend()) {
-      $this->getBackend()->submitConfigurationForm($form, $form_state);
     }
   }
 
@@ -282,7 +250,7 @@ class Server extends ConfigEntityBase implements ServerInterface, PluginFormInte
     $storage = \Drupal::entityManager()->getStorage('search_api_index');
     // Retrieve the indexes attached to the server.
     return $storage->loadByProperties(array(
-      'serverMachineName' => $this->id(),
+      'server' => $this->id(),
     ) + $properties);
   }
 
@@ -425,7 +393,7 @@ class Server extends ConfigEntityBase implements ServerInterface, PluginFormInte
    */
   public function deleteAllItems() {
     $failed = array();
-    $properties['readOnly'] = FALSE;
+    $properties['read_only'] = FALSE;
     foreach ($this->getIndexes($properties) as $index) {
       try {
         $this->getBackend()->deleteAllIndexItems($index);
@@ -437,7 +405,7 @@ class Server extends ConfigEntityBase implements ServerInterface, PluginFormInte
     if (!empty($e)) {
       $args['%server'] = $this->label();
       $args['@indexes'] = implode(', ', $failed);
-      $message = t('Deleting all items from server %server failed for the following (write-enabled) indexes: @indexes.', $args);
+      $message = String::format('Deleting all items from server %server failed for the following (write-enabled) indexes: @indexes.', $args);
       throw new SearchApiException($message, 0, $e);
     }
   }
@@ -468,15 +436,8 @@ class Server extends ConfigEntityBase implements ServerInterface, PluginFormInte
   /**
    * {@inheritdoc}
    */
-  public function setBackendPluginConfig($backendPluginConfig) {
-    $this->backendPluginConfig = $backendPluginConfig;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getBackendPluginConfig() {
-    return $this->backendPluginConfig;
+  public function getBackendConfig() {
+    return $this->backend_config;
   }
 
   /**

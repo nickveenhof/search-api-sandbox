@@ -11,7 +11,9 @@ use Drupal\search_api\Exception\SearchApiException;
 use Drupal\simpletest\KernelTestBase;
 
 /**
- * Tests correct working of the server task system.
+ * Tests whether the server task system works correctly.
+ *
+ * @group search_api
  */
 class SearchApiServerTaskUnitTest extends KernelTestBase {
 
@@ -60,17 +62,6 @@ class SearchApiServerTaskUnitTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static function getInfo() {
-    return array(
-      'name' => 'Search API Server Tasks',
-      'description' => 'Tests the Search API server tasks system.',
-      'group' => 'Search API',
-    );
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function setUp() {
     parent::setUp();
 
@@ -84,7 +75,7 @@ class SearchApiServerTaskUnitTest extends KernelTestBase {
       'name' => $this->randomString(),
       'machine_name' => $this->randomName(),
       'status' => 1,
-      'backendPluginId' => 'search_api_test_backend',
+      'backend' => 'search_api_test_backend',
     ));
     $this->server->save();
 
@@ -93,9 +84,9 @@ class SearchApiServerTaskUnitTest extends KernelTestBase {
       'name' => $this->randomString(),
       'machine_name' => $this->randomName(),
       'status' => 1,
-      'datasourcePluginIds' => array('entity:user'),
-      'trackerPluginId' => 'default_tracker',
-      'serverMachineName' => $this->server->id(),
+      'datasources' => array('entity:user'),
+      'tracker' => 'default_tracker',
+      'server' => $this->server->id(),
       'options' => array('index_directly' => FALSE),
     ));
     $this->index->save();
@@ -222,7 +213,7 @@ class SearchApiServerTaskUnitTest extends KernelTestBase {
       $this->fail('Pending server tasks did not prevent indexing of items.');
     }
     catch (SearchApiException $e) {
-      $expected_message = t('Could not index items because pending server tasks could not be executed.');
+      $expected_message = 'Could not index items because pending server tasks could not be executed.';
       $this->assertEqual($e->getMessage(), $expected_message, 'Pending server tasks prevented indexing of items.');
     }
     $this->assertEqual($this->getCalledServerMethods(), array(), 'indexItems was not executed.');

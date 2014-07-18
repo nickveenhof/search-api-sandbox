@@ -99,8 +99,8 @@ class IndexFiltersForm extends EntityForm {
     $form['#processors'] = $processors_settings;
     $form['processors'] = array(
       '#type' => 'details',
-      '#title' => t('Processors'),
-      '#description' => t('Select processors which will pre- and post-process data at index and search time, and their order. ' .
+      '#title' => $this->t('Processors'),
+      '#description' => $this->t('Select processors which will pre- and post-process data at index and search time, and their order. ' .
         'Most processors will only influence fulltext fields, but refer to their individual descriptions for details regarding their effect.'),
       '#open' => TRUE,
     );
@@ -108,7 +108,7 @@ class IndexFiltersForm extends EntityForm {
     // Processor status.
     $form['processors']['status'] = array(
       '#type' => 'item',
-      '#title' => t('Enabled processors'),
+      '#title' => $this->t('Enabled processors'),
       '#prefix' => '<div class="search-api-status-wrapper">',
       '#suffix' => '</div>',
     );
@@ -126,7 +126,7 @@ class IndexFiltersForm extends EntityForm {
 
     $form['processors']['order'] = array(
       '#type' => 'table',
-      '#header' => array(t('Processor'), t('Weight')),
+      '#header' => array($this->t('Processor'), $this->t('Weight')),
       '#tabledrag' => array(
         array(
           'action' => 'order',
@@ -146,7 +146,7 @@ class IndexFiltersForm extends EntityForm {
       // TableDrag: Weight column element.
       $form['processors']['order'][$name]['weight'] = array(
         '#type' => 'weight',
-        '#title' => t('Weight for @title', array('@title' => $processor->label())),
+        '#title' => $this->t('Weight for @title', array('@title' => $processor->label())),
         '#title_display' => 'invisible',
         '#default_value' => $processors_settings[$name]['weight'],
         '#parents' => array('processors', $name, 'weight'),
@@ -156,7 +156,7 @@ class IndexFiltersForm extends EntityForm {
 
     // Processor settings.
     $form['processor_settings'] = array(
-      '#title' => t('Processor settings'),
+      '#title' => $this->t('Processor settings'),
       '#type' => 'vertical_tabs',
     );
 
@@ -204,7 +204,10 @@ class IndexFiltersForm extends EntityForm {
 
     // Store processor settings.
     foreach ($form_state['processors'] as $name => $processor) {
-      $processor_form = isset($form['processors']['settings'][$name]) ? $form['processors']['settings'][$name] : array();
+      $processor_form = array();
+      if (isset($form['processors']['settings'][$name])) {
+        $processor_form = &$form['processors']['settings'][$name];
+      }
       $default_settings = array(
         'settings' => array(),
         'processorPluginId' => $name,
@@ -224,7 +227,7 @@ class IndexFiltersForm extends EntityForm {
 
     if (!isset($options['processors']) || $options['processors'] !== $values['processors']) {
       // Save the already sorted arrays to avoid having to sort them at each use.
-      uasort($values['processors'], array($this, 'elementCompare'));
+      uasort($values['processors'], array('Drupal\Component\Utility\SortArray', 'sortByWeightElement'));
       $this->entity->setOption('processors', $values['processors']);
 
       // Reset the index's internal property cache to correctly incorporate the
@@ -233,10 +236,10 @@ class IndexFiltersForm extends EntityForm {
 
       $this->entity->save();
       $this->entity->reindex();
-      drupal_set_message(t("The indexing workflow was successfully edited. All content was scheduled for re-indexing so the new settings can take effect."));
+      drupal_set_message($this->t("The indexing workflow was successfully edited. All content was scheduled for re-indexing so the new settings can take effect."));
     }
     else {
-      drupal_set_message(t('No values were changed.'));
+      drupal_set_message($this->t('No values were changed.'));
     }
   }
 
@@ -253,37 +256,23 @@ class IndexFiltersForm extends EntityForm {
   }
 
   /**
-   * Sort callback sorting array elements by their "weight" key, if present.
-   *
-   * @see element_sort()
-   */
-  function elementCompare($a, $b) {
-    $a_weight = (is_array($a) && isset($a['weight'])) ? $a['weight'] : 0;
-    $b_weight = (is_array($b) && isset($b['weight'])) ? $b['weight'] : 0;
-    if ($a_weight == $b_weight) {
-      return 0;
-    }
-    return ($a_weight < $b_weight) ? -1 : 1;
-  }
-
-  /**
    * Gets the filters from the form_state.
    *
    * Returns the portion of the form_state array used in validate and submit
    * that corresponds to the filter being processed.
    *
-   * @param $filter_name
+   * @param string $filter_name
    *   Name of processor/filter
-   * @param $form_state
+   * @param array $form_state
    *   The form_state array passed into validate and submit methods
    *
    * @return array
-   *   The values of the filter being processed.
+   *   The form state of the filter being processed.
    */
-  protected function getFilterFormState($filter_name, $form_state) {
-    $filter_form_state = array('values' => array());
-    if(isset($form_state['values']['processors'][$filter_name]['settings'])) {
-        $filter_form_state['values'] = $form_state['values']['processors'][$filter_name]['settings'];
+  protected function getFilterFormState($filter_name, array &$form_state) {
+    $filter_form_state['values'] = array();
+    if (!empty($form_state['values']['processors'][$filter_name]['settings'])) {
+      $filter_form_state['values'] = &$form_state['values']['processors'][$filter_name]['settings'];
     }
     return $filter_form_state;
   }

@@ -14,7 +14,7 @@ search_api.index.*:
     description:
       type: text
       label: 'Description'
-    readOnly:
+    read_only:
       type: boolean
       label: 'Read-only'
     options:
@@ -31,35 +31,37 @@ search_api.index.*:
           type: sequence
           label: 'The processors for this index'
           sequence:
-            - type: 'mapping'
+            - type: mapping
               label: 'A processor'
               mapping:
                 status:
-                  type: 'string'
+                  type: string
                   label: 'Status of the processor'
                 weight:
-                  type: 'integer'
+                  type: integer
                   label: 'The weight of the processor'
                 processorPluginId:
-                  type: 'string'
+                  type: string
                   label: 'The plugin ID of the processor'
                 settings:
-                  type: 'search_api.processor.plugin.[%parent.processorPluginId]'
-
-    datasourcePluginIds:
+                  type: search_api.processor.plugin.[%parent.processorPluginId]
+    datasources:
       type: sequence
       label: 'Datasource plugin IDs'
       sequence:
         - type: string
-    # How to do this properly?
-    #datasourcePluginConfigs:
-    #  type: mapping
-    trackerPluginId:
+    datasource_configs:
+      type: sequence
+      label: 'Datasource plugin configurations'
+      sequence:
+        # @todo Update when https://www.drupal.org/node/2291073 is fixed.
+        - type: search_api.datasource.plugin.[%key]
+    tracker:
       type: string
       label: 'Tracker plugin ID'
-    trackerPluginConfig:
-      type: search_api.tracker.plugin.[%parent.trackerPluginId]
-    serverMachineName:
+    tracker_config:
+      type: search_api.tracker.plugin.[%parent.tracker]
+    server:
       type: string
       label: 'Server machine name'
     status:
@@ -68,3 +70,6 @@ search_api.index.*:
     langcode:
       type: string
       label: 'Language code'
+    dependencies:
+      type: config_dependencies
+      label: 'Dependencies'

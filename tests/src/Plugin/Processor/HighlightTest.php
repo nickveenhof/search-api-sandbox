@@ -8,35 +8,20 @@
 namespace Drupal\search_api\Tests\Plugin\Processor;
 
 use Drupal\search_api\Plugin\SearchApi\Processor\Highlight;
+use Drupal\search_api\Tests\Processor\TestItemsTrait;
+use Drupal\search_api\Utility\Utility;
 use Drupal\Tests\UnitTestCase;
 
 /**
- * Tests the Highlight processor plugin.
+ * Tests the "Highlight" processor.
  *
- * @group Drupal
  * @group search_api
+ *
+ * @see \Drupal\search_api\Plugin\SearchApi\Processor\Highlight
  */
-// @todo Rewrite this whole class:
-//   - Each method should only test a single thing.
-//   - The tests should use the processor itself instead of a mock. Use mocks
-//     for index, datasource, etc., if necessary.
-//   - The tests should only test the interface methods (in this case, probably
-//     only postprocessSearchResults()) instead of implementation details.
-/*
-How to create search results:
-$results = Utility::createSearchResultSet($query);
-$results->setResultCount(2);
-$result_items = array(
-  'test:1' => Utility::createItem($this->index, 'test:1'),
-  'test:2' => Utility::createItem($this->index, 'test:2'),
-);
-$results->setResultItems($result_items);
-$field = Utility::createField($this->index, 'field1');
-…
-$result_items['test:1']->setField('field1', $field);
-…
-*/
 class HighlightTest extends UnitTestCase {
+
+  use TestItemsTrait;
 
   /**
    * Stores the processor to be tested.
@@ -46,168 +31,646 @@ class HighlightTest extends UnitTestCase {
   protected $processor;
 
   /**
-   * {@inheritdoc}
-   */
-  public static function getInfo() {
-    return array(
-      'name' => 'Highlight Processor Plugin',
-      'description' => 'Unit tests of postprocessor excerpt highlighting.',
-      'group' => 'Search API',
-    );
-  }
-
-  /**
    * Creates a new processor object for use in the tests.
    */
   protected function setUp() {
     parent::setUp();
 
-    // @todo Also set up an index here.
     $this->processor = new Highlight(array(), 'highlight', array());
+
     /** @var \Drupal\Core\StringTranslation\TranslationInterface $translation */
     $translation = $this->getStringTranslationStub();
     $this->processor->setStringTranslation($translation);
   }
 
+
   /**
-   * Test postprocessSearchResults.
-   *
-   * Checks configuration changes to what is sent to be highlighted.
+   * Tests postprocessing with empty result set.
    */
-  public function testPostProcessSearchResults() {
-    // Old code:
-    /*
+  public function testPostprocessSearchResultsWithEmptyResult() {
     $query = $this->getMock('Drupal\search_api\Query\QueryInterface');
 
-    $processor = $this->getMockBuilder('\Drupal\search_api\Plugin\SearchApi\Processor\Highlight')
-      ->setMethods(array('getKeywords'))
-      ->setConstructorArgs(array(array(), 'highlight', array()))
+    $results = $this->getMockBuilder('\Drupal\search_api\Query\ResultSet')
+      ->setMethods(array('getResultCount'))
+      ->setConstructorArgs(array($query))
       ->getMock();
-    $response = array(
-      'result count' => 2,
-      'results' => array(
-        1 => array(),
-        array(
-          2 => array(),
-        ),
-      ),
-    );
 
-    // Trivial case. No keywords.
-    $processor->expects($this->once())
-      ->method('getKeywords');
-    $result = $response;
-    $processor->postprocessSearchResults($response, $query);
-    $this->assertEquals($response, $result, 'Nothing done if no keys selected.');
+    $results->expects($this->once())
+      ->method('getResultCount')
+      ->will($this->returnValue(0));
+    $results->expects($this->never())
+      ->method('getQuery');
+    $results->expects($this->never())
+      ->method('setExtraData');
+    /** @var \Drupal\search_api\Query\ResultSet $results */
 
-    // Keys are set; and highlight is enabled ('always').
-    $processor = $this->getMockBuilder('\Drupal\search_api\Plugin\SearchApi\Processor\Highlight')
-      ->setMethods(array('postprocessExcerptResults', 'postprocessFieldResults', 'getKeywords'))
-      ->setConstructorArgs(array(array(), 'highlight', array()))
+    $this->processor->postprocessSearchResults($results);
+  }
+
+
+  /**
+   * Tests postprocessing with a query without keywords.
+   */
+  public function testPostprocessSearchResultsWithoutKeywords() {
+    $query = $this->getMock('Drupal\search_api\Query\QueryInterface');
+
+    $results = $this->getMockBuilder('Drupal\search_api\Query\ResultSet')
+      ->setMethods(array('getResultCount', 'getQuery'))
+      ->setConstructorArgs(array($query))
       ->getMock();
-    $processor->expects($this->once())
-      ->method('getKeywords')
-      ->will($this->returnValue(array('mail', 'text')));
-    $processor->expects($this->exactly(2))
-      ->method('postprocessFieldResults');
-    $processor->expects($this->never())
-      ->method('postprocessExcerptResults');
-    $configuration = array(
-      'highlight' => 'always',
-      'excerpt' => 0,
-    );
-    $processor->setConfiguration($configuration);
-    $processor->postprocessSearchResults($response, $query);
 
-    // Keys are set; and highlight is disabled. Excerpt is enabled.
-    $processor = $this->getMockBuilder('\Drupal\search_api\Plugin\SearchApi\Processor\Highlight')
-      ->setMethods(array('postprocessExcerptResults', 'postprocessFieldResults', 'getKeywords'))
-      ->setConstructorArgs(array(array(), 'highlight', array()))
-      ->getMock();
-    $configuration = array(
-      'highlight' => 'never',
-      'excerpt' => 1,
-    );
-    $processor->expects($this->once())
-      ->method('getKeywords')
-      ->will($this->returnValue(array('mail', 'text')));
-    $processor->expects($this->exactly(2))
-      ->method('postprocessExcerptResults');
-    $processor->expects($this->never())
-      ->method('postprocessFieldResults');
-    $processor->setConfiguration($configuration);
-    $processor->postprocessSearchResults($response, $query);
-    */
+    $query->expects($this->once())
+      ->method('getKeys')
+      ->will($this->returnValue(array()));
+
+    $results->expects($this->once())
+      ->method('getResultCount')
+      ->will($this->returnValue(1));
+    $results->expects($this->once())
+      ->method('getQuery')
+      ->will($this->returnValue($query));
+    $results->expects($this->never())
+      ->method('setExtraData');
+    /** @var \Drupal\search_api\Query\ResultSet $results */
+
+    $this->processor->postprocessSearchResults($results);
   }
 
   /**
-   * Tests createExcerpt, and highlighField with simulated search keywords.
-   *
-   * Checks highlighting, excerpting, seperators.
+   * Tests field highlighting with a normal result set.
    */
-  public function testSearchExcerpt() {
-    // Old code:
-    /*
-    $processor = $this->getMockBuilder('\Drupal\search_api\Plugin\SearchApi\Processor\Highlight')
-      ->setConstructorArgs(array(array(), 'highlight', array()))
-      ->getMock();
-    // Access protected createExcerpt method.
-    $reflectionProcessor = new \ReflectionClass('Drupal\search_api\Plugin\SearchApi\Processor\Highlight');
-    $createExcerpt = $reflectionProcessor->getMethod('createExcerpt');
-    $createExcerpt->setAccessible(TRUE);
+  public function testPostprocessSearchResultsWithResults() {
+    $body_field_id = Utility::createCombinedId('entity:node', 'body');
+
+    $query = $this->getMock('Drupal\search_api\Query\QueryInterface');
+    $query->expects($this->atLeastOnce())
+      ->method('getKeys')
+      ->will($this->returnValue('foo'));
+    /** @var \Drupal\search_api\Query\QueryInterface $query */
+
+    /** @var \Drupal\search_api\Index\IndexInterface|\PHPUnit_Framework_MockObject_MockObject $index */
+    $index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+
+    $field = Utility::createField($index, $body_field_id);
+    $field->setType('text');
+
+    $index->expects($this->atLeastOnce())
+      ->method('getFields')
+      ->will($this->returnValue(array($body_field_id => $field)));
+
+    $this->processor->setIndex($index);
+
+    $body_values = array('Some foo value');
+    $fields = array(
+      $body_field_id => array(
+        'type' => 'text',
+        'values' => $body_values,
+      ),
+    );
+
+    $items = $this->createItems($index, 1, $fields);
+
+    $results = Utility::createSearchResultSet($query);
+    $results->setResultItems($items);
+    $results->setResultCount(1);
+
+    $this->processor->postprocessSearchResults($results);
+
+    $output = $results->getExtraData('highlighted_fields');
+    $this->assertEquals('Some <strong>foo</strong> value', $output[$this->item_ids[0]][$body_field_id][0], 'Highlighting is correctly applied to body field.');
+  }
+
+  /**
+   * Tests changing the prefix and suffix used for highlighting.
+   */
+  public function testPostprocessSearchResultsWithChangedPrefixSuffix() {
+    $this->processor->setConfiguration(array('prefix' => '<em>', 'suffix' => '</em>'));
+
+    $body_field_id = Utility::createCombinedId('entity:node', 'body');
+
+    $query = $this->getMock('Drupal\search_api\Query\QueryInterface');
+    $query->expects($this->atLeastOnce())
+      ->method('getKeys')
+      ->will($this->returnValue(array('#conjunction' => 'AND', 'foo')));
+    /** @var \Drupal\search_api\Query\QueryInterface $query */
+
+    /** @var \Drupal\search_api\Index\IndexInterface|\PHPUnit_Framework_MockObject_MockObject $index */
+    $index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+
+    $field = Utility::createField($index, $body_field_id);
+    $field->setType('text');
+
+    $index->expects($this->atLeastOnce())
+      ->method('getFields')
+      ->will($this->returnValue(array($body_field_id => $field)));
+
+    $this->processor->setIndex($index);
+
+    $body_values = array('Some foo value');
+    $fields = array(
+      $body_field_id => array(
+        'type' => 'text',
+        'values' => $body_values,
+      ),
+    );
+
+    $items = $this->createItems($index, 1, $fields);
+
+    $results = Utility::createSearchResultSet($query);
+    $results->setResultItems($items);
+    $results->setResultCount(1);
+
+    $this->processor->postprocessSearchResults($results);
+
+    $output = $results->getExtraData('highlighted_fields');
+    $this->assertEquals('Some <em>foo</em> value', $output[$this->item_ids[0]][$body_field_id][0], 'Highlighting is correctly applied');
+  }
+
+  /**
+   * Test to see if field highlighting can be disabled.
+   */
+  public function testPostprocessSearchResultsWithoutHighlight() {
+    $this->processor->setConfiguration(array('highlight' => 'never'));
+
+    $body_field_id = Utility::createCombinedId('entity:node', 'body');
+
+    $query = $this->getMock('Drupal\search_api\Query\QueryInterface');
+    $query->expects($this->atLeastOnce())
+      ->method('getKeys')
+      ->will($this->returnValue(array('#conjunction' => 'AND', 'foo')));
+    /** @var \Drupal\search_api\Query\QueryInterface $query */
+
+    /** @var \Drupal\search_api\Index\IndexInterface|\PHPUnit_Framework_MockObject_MockObject $index */
+    $index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+
+    $field = Utility::createField($index, $body_field_id);
+    $field->setType('text');
+
+    $index->expects($this->atLeastOnce())
+      ->method('getFields')
+      ->will($this->returnValue(array($body_field_id => $field)));
+
+    $this->processor->setIndex($index);
+
+    $body_values = array('Some foo value');
+    $fields = array(
+      $body_field_id => array(
+        'type' => 'text',
+        'values' => $body_values,
+      ),
+    );
+
+    $items = $this->createItems($index, 1, $fields);
+
+    $results = Utility::createSearchResultSet($query);
+    $results->setResultItems($items);
+    $results->setResultCount(1);
+
+    $this->processor->postprocessSearchResults($results);
+
+    $output = $results->getExtraData('highlighted_fields');
+    $this->assertEmpty($output, 'Highlighting is not applied when disabled.');
+  }
+
+  /**
+   * Tests field highlighting when previous highlighting is present.
+   */
+  public function testPostprocessSearchResultsWithPreviousHighlighting() {
+    $body_field_id = Utility::createCombinedId('entity:node', 'body');
+
+    $query = $this->getMock('Drupal\search_api\Query\QueryInterface');
+    $query->expects($this->atLeastOnce())
+      ->method('getKeys')
+      ->will($this->returnValue(array('#conjunction' => 'AND', 'foo')));
+    /** @var \Drupal\search_api\Query\QueryInterface $query */
+
+    /** @var \Drupal\search_api\Index\IndexInterface|\PHPUnit_Framework_MockObject_MockObject $index */
+    $index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+
+    $field = Utility::createField($index, $body_field_id);
+    $field->setType('text');
+
+    $index->expects($this->atLeastOnce())
+      ->method('getFields')
+      ->will($this->returnValue(array($body_field_id => $field)));
+
+    $this->processor->setIndex($index);
+
+    $body_values = array('Some foo value');
+    $fields = array(
+      $body_field_id => array(
+        'type' => 'text',
+        'values' => $body_values,
+      ),
+    );
+
+    $items = $this->createItems($index, 1, $fields);
+
+    $results = Utility::createSearchResultSet($query);
+    $results->setResultItems($items);
+    $results->setResultCount(1);
+    $highlighted_fields[$this->item_ids[0]]["{$body_field_id}_2"][0] = 'Old highlighting text';
+    $highlighted_fields[$this->item_ids[0]]["{$body_field_id}_2"][1] = 'More highlighting text';
+    $results->setExtraData('highlighted_fields', $highlighted_fields);
+
+    $this->processor->postprocessSearchResults($results);
+
+    $output = $results->getExtraData('highlighted_fields');
+    $this->assertEquals('Some <strong>foo</strong> value', $output[$this->item_ids[0]][$body_field_id][0], 'Highlighting correctly applied to body field.');
+    $this->assertEquals('Old highlighting text', $output[$this->item_ids[0]]["{$body_field_id}_2"][0], 'Old highlighting data is preserved.');
+    $this->assertEquals('More highlighting text', $output[$this->item_ids[0]]["{$body_field_id}_2"][1], 'Old highlighting data is preserved.');
+  }
+
+  /**
+   * Test to see if highlight works on a longer text
+   */
+  public function testPostprocessSearchResultsExerpt() {
+    $body_field_id = Utility::createCombinedId('entity:node', 'body');
+
+    $query = $this->getMock('Drupal\search_api\Query\QueryInterface');
+    $query->expects($this->atLeastOnce())
+      ->method('getKeys')
+      ->will($this->returnValue(array('#conjunction' => 'AND', 'congue')));
+    /** @var \Drupal\search_api\Query\QueryInterface $query */
+
+    /** @var \Drupal\search_api\Index\IndexInterface|\PHPUnit_Framework_MockObject_MockObject $index */
+    $index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+
+    $field = Utility::createField($index, $body_field_id);
+    $field->setType('text');
+
+    $index->expects($this->atLeastOnce())
+      ->method('getFields')
+      ->will($this->returnValue(array($body_field_id => $field)));
+
+    $this->processor->setIndex($index);
+
+    $body_values = array($this->getFieldBody());
+    $fields = array(
+      $body_field_id => array(
+        'type' => 'text',
+        'values' => $body_values,
+      ),
+    );
+
+    $items = $this->createItems($index, 1, $fields);
+
+    $results = Utility::createSearchResultSet($query);
+    $results->setResultItems($items);
+    $results->setResultCount(1);
+
+    $this->processor->postprocessSearchResults($results);
+
+    $output = $results->getResultItems();
+    $excerpt = $output[$this->item_ids[0]]->getExcerpt();
+    $correct_output = '… tristique, ligula sit amet condimentum dapibus, lorem nunc <strong>congue</strong> velit, et dictum augue leo sodales augue. Maecenas …';
+    $this->assertEquals($correct_output, $excerpt, 'Excerpt was added.');
+  }
+
+  /**
+   * Tests whether highlighting works on a longer text matching near the end.
+   */
+  public function testPostprocessSearchResultsExerptMatchNearEnd() {
+    $body_field_id = Utility::createCombinedId('entity:node', 'body');
+
+    $query = $this->getMock('Drupal\search_api\Query\QueryInterface');
+    $query->expects($this->atLeastOnce())
+      ->method('getKeys')
+      ->will($this->returnValue(array('#conjunction' => 'AND', 'diam')));
+    /** @var \Drupal\search_api\Query\QueryInterface $query */
+
+    /** @var \Drupal\search_api\Index\IndexInterface|\PHPUnit_Framework_MockObject_MockObject $index */
+    $index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+
+    $field = Utility::createField($index, $body_field_id);
+    $field->setType('text');
+
+    $index->expects($this->atLeastOnce())
+      ->method('getFields')
+      ->will($this->returnValue(array($body_field_id => $field)));
+
+    $this->processor->setIndex($index);
+
+    $body_values = array($this->getFieldBody());
+    $fields = array(
+      $body_field_id => array(
+        'type' => 'text',
+        'values' => $body_values,
+      ),
+    );
+
+    $items = $this->createItems($index, 1, $fields);
+
+    $results = Utility::createSearchResultSet($query);
+    $results->setResultItems($items);
+    $results->setResultCount(1);
+
+    $this->processor->postprocessSearchResults($results);
+
+    $output = $results->getResultItems();
+    $excerpt = $output[$this->item_ids[0]]->getExcerpt();
+    $correct_output = '… Fusce in mauris eu leo fermentum feugiat. Proin varius <strong>diam</strong> ante, non eleifend ipsum luctus sed. …';
+    $this->assertEquals($correct_output, $excerpt, 'Excerpt was added.');
+  }
+
+  /**
+   * Test to see if highlight works with a changed excerpt length
+   */
+  public function testPostprocessSearchResultsWithChangedExerptLength() {
+    $this->processor->setConfiguration(array('excerpt_length' => 64));
+
+    $body_field_id = Utility::createCombinedId('entity:node', 'body');
+
+    $query = $this->getMock('Drupal\search_api\Query\QueryInterface');
+    $query->expects($this->atLeastOnce())
+      ->method('getKeys')
+      ->will($this->returnValue('congue'));
+    /** @var \Drupal\search_api\Query\QueryInterface $query */
+
+    /** @var \Drupal\search_api\Index\IndexInterface|\PHPUnit_Framework_MockObject_MockObject $index */
+    $index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+
+    $field = Utility::createField($index, $body_field_id);
+    $field->setType('text');
+
+    $index->expects($this->atLeastOnce())
+      ->method('getFields')
+      ->will($this->returnValue(array($body_field_id => $field)));
+
+    $this->processor->setIndex($index);
+
+    $body_values = array($this->getFieldBody());
+    $fields = array(
+      $body_field_id => array(
+        'type' => 'text',
+        'values' => $body_values,
+      ),
+    );
+
+    $items = $this->createItems($index, 1, $fields);
+
+    $results = Utility::createSearchResultSet($query);
+    $results->setResultItems($items);
+    $results->setResultCount(1);
+
+    $this->processor->postprocessSearchResults($results);
+
+    $output = $results->getResultItems();
+    $excerpt = $output[$this->item_ids[0]]->getExcerpt();
+    $correct_output = '… dapibus, lorem nunc <strong>congue</strong> velit, et dictum augue …';
+    $this->assertEquals($correct_output, $excerpt, 'Excerpt has correct reduced length.');
+  }
+
+  /**
+   * Test to see if adding an excerpt can be successfully disabled.
+   */
+  public function testPostprocessSearchResultsWithoutExcerpt() {
+    $this->processor->setConfiguration(array('excerpt' => FALSE));
+
+    $body_field_id = Utility::createCombinedId('entity:node', 'body');
+
+    $query = $this->getMock('Drupal\search_api\Query\QueryInterface');
+    $query->expects($this->atLeastOnce())
+      ->method('getKeys')
+      ->will($this->returnValue(array('#conjunction' => 'AND', 'congue')));
+    /** @var \Drupal\search_api\Query\QueryInterface $query */
+
+    /** @var \Drupal\search_api\Index\IndexInterface|\PHPUnit_Framework_MockObject_MockObject $index */
+    $index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+
+    $field = Utility::createField($index, $body_field_id);
+    $field->setType('text');
+
+    $index->expects($this->atLeastOnce())
+      ->method('getFields')
+      ->will($this->returnValue(array($body_field_id => $field)));
+
+    $this->processor->setIndex($index);
+
+    $body_values = array($this->getFieldBody());
+    $fields = array(
+      $body_field_id => array(
+        'type' => 'text',
+        'values' => $body_values,
+      ),
+    );
+
+    $items = $this->createItems($index, 1, $fields);
+
+    $results = Utility::createSearchResultSet($query);
+    $results->setResultItems($items);
+    $results->setResultCount(1);
+
+    $this->processor->postprocessSearchResults($results);
+
+    $excerpt = $items[$this->item_ids[0]]->getExcerpt();
+
+    $this->assertEmpty($excerpt, 'No excerpt added when disabled.');
+  }
+
+  /**
+   * Test to see if highlight works on a longer text
+   */
+  public function testPostprocessSearchResultsWithComplexKeys() {
+    $body_field_id = Utility::createCombinedId('entity:node', 'body');
+
+    $keys = array(
+      '#conjunction' => 'AND',
+      array(
+        '#conjunction' => 'OR',
+        'foo',
+        'bar',
+      ),
+      'baz',
+      array(
+        '#conjunction' => 'OR',
+        '#negation' => TRUE,
+        'text',
+        'will',
+      ),
+    );
+    $query = $this->getMock('Drupal\search_api\Query\QueryInterface');
+    $query->expects($this->atLeastOnce())
+      ->method('getKeys')
+      ->will($this->returnValue($keys));
+    /** @var \Drupal\search_api\Query\QueryInterface $query */
+
+    /** @var \Drupal\search_api\Index\IndexInterface|\PHPUnit_Framework_MockObject_MockObject $index */
+    $index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+
+    $body_field = Utility::createField($index, $body_field_id);
+    $body_field->setType('text');
+
+    $index->expects($this->atLeastOnce())
+      ->method('getFields')
+      ->will($this->returnValue(array($body_field_id => $body_field)));
+
+    $this->processor->setIndex($index);
+
+    $body_values = array('This foo text bar will get baz riddled with &lt;strong&gt; tags.');
+    $fields = array(
+      $body_field_id => array(
+        'type' => 'text',
+        'values' => $body_values,
+      ),
+    );
+
+    $items = $this->createItems($index, 1, $fields);
+
+    $results = Utility::createSearchResultSet($query);
+    $results->setResultItems($items);
+    $results->setResultCount(1);
+
+    $this->processor->postprocessSearchResults($results);
+
+    $highlighted_fields = $results->getExtraData('highlighted_fields');
+    $this->assertEquals('This <strong>foo</strong> text <strong>bar</strong> will get <strong>baz</strong> riddled with &lt;strong&gt; tags.', $highlighted_fields[$this->item_ids[0]][$body_field_id][0], 'Highlighting is correctly applied when keys are complex.');
+    $correct_output = '… This <strong>foo</strong> text <strong>bar</strong> will get <strong>baz</strong> riddled with &lt;strong&gt; tags. …';
+    $excerpt = $items[$this->item_ids[0]]->getExcerpt();
+    $this->assertEquals($correct_output, $excerpt, 'Excerpt was added.');
+  }
+
+  /**
+   * Tests field highlighting and excerpts for two fields.
+   */
+  public function testPostprocessSearchResultsWithTwoFields() {
+    $body_field_id = Utility::createCombinedId('entity:node', 'body');
+    $title_field_id = Utility::createCombinedId('entity:node', 'title');
+
+    $query = $this->getMock('Drupal\search_api\Query\QueryInterface');
+    $query->expects($this->atLeastOnce())
+      ->method('getKeys')
+      ->will($this->returnValue(array('#conjunction' => 'AND', 'foo')));
+    /** @var \Drupal\search_api\Query\QueryInterface $query */
+
+    /** @var \Drupal\search_api\Index\IndexInterface|\PHPUnit_Framework_MockObject_MockObject $index */
+    $index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+
+    $body_field = Utility::createField($index, $body_field_id);
+    $body_field->setType('text');
+    $title_field = Utility::createField($index, $title_field_id);
+    $title_field->setType('text');
+
+    $index->expects($this->atLeastOnce())
+      ->method('getFields')
+      ->will($this->returnValue(array($body_field_id => $body_field, $title_field_id => $title_field)));
+
+    $this->processor->setIndex($index);
+
+    $body_values = array('Some foo value', 'foo bar');
+    $title_values = array('Title foo');
+    $fields = array(
+      $body_field_id => array(
+        'type' => 'text',
+        'values' => $body_values,
+      ),
+      $title_field_id => array(
+        'type' => 'text',
+        'values' => $title_values,
+      ),
+    );
+
+    $items = $this->createItems($index, 1, $fields);
+
+    $results = Utility::createSearchResultSet($query);
+    $results->setResultItems($items);
+    $results->setResultCount(1);
+
+    $this->processor->postprocessSearchResults($results);
+
+    $output = $results->getExtraData('highlighted_fields');
+    $this->assertEquals('Some <strong>foo</strong> value', $output[$this->item_ids[0]][$body_field_id][0], 'Highlighting is correctly applied to first body field value.');
+    $this->assertEquals('<strong>foo</strong> bar', $output[$this->item_ids[0]][$body_field_id][1], 'Highlighting is correctly applied to second body field value.');
+    $this->assertEquals('Title <strong>foo</strong>', $output[$this->item_ids[0]][$title_field_id][0], 'Highlighting is correctly applied to title field.');
+
+    $excerpt = '… Some <strong>foo</strong> value … <strong>foo</strong> bar … Title <strong>foo</strong> …';
+    $this->assertEquals($excerpt, $items[$this->item_ids[0]]->getExcerpt(), 'Correct excerpt created from two text fields.');
+  }
+
+  /**
+   * Tests field highlighting and excerpts with two items.
+   */
+  public function testPostprocessSearchResultsWithTwoItems() {
+    $body_field_id = Utility::createCombinedId('entity:node', 'body');
+
+    $query = $this->getMock('Drupal\search_api\Query\QueryInterface');
+    $query->expects($this->atLeastOnce())
+      ->method('getKeys')
+      ->will($this->returnValue(array('#conjunction' => 'OR', 'foo')));
+    /** @var \Drupal\search_api\Query\QueryInterface $query */
+
+    /** @var \Drupal\search_api\Index\IndexInterface|\PHPUnit_Framework_MockObject_MockObject $index */
+    $index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+
+    $body_field = Utility::createField($index, $body_field_id);
+    $body_field->setType('text');
+
+    $index->expects($this->atLeastOnce())
+      ->method('getFields')
+      ->will($this->returnValue(array($body_field_id => $body_field)));
+
+    $this->processor->setIndex($index);
+
+    $body_values = array('Some foo value', 'foo bar');
+    $fields = array(
+      $body_field_id => array(
+        'type' => 'text',
+        'values' => $body_values,
+      ),
+    );
+
+    $items = $this->createItems($index, 2, $fields);
+
+    $items[$this->item_ids[1]]->getField($body_field_id)->setValues(array('The second item also contains foo in its body.'));
+
+    $results = Utility::createSearchResultSet($query);
+    $results->setResultItems($items);
+    $results->setResultCount(1);
+
+    $this->processor->postprocessSearchResults($results);
+
+    $output = $results->getExtraData('highlighted_fields');
+    $this->assertEquals('Some <strong>foo</strong> value', $output[$this->item_ids[0]][$body_field_id][0], 'Highlighting is correctly applied to first body field value.');
+    $this->assertEquals('<strong>foo</strong> bar', $output[$this->item_ids[0]][$body_field_id][1], 'Highlighting is correctly applied to second body field value.');
+    $this->assertEquals('The second item also contains <strong>foo</strong> in its body.', $output[$this->item_ids[1]][$body_field_id][0], 'Highlighting is correctly applied to second item.');
+
+    $excerpt1 = '… Some <strong>foo</strong> value … <strong>foo</strong> bar …';
+    $excerpt2 = '… The second item also contains <strong>foo</strong> in its body. …';
+    $this->assertEquals($excerpt1, $items[$this->item_ids[0]]->getExcerpt(), 'Correct excerpt created from two text fields.');
+    $this->assertEquals($excerpt2, $items[$this->item_ids[1]]->getExcerpt(), 'Correct excerpt created for second item.');
+  }
 
 
-    // Make some text with entities and tags.
-    $text = 'The <strong>quick</strong> <a href="#">brown</a> fox &amp; jumps <h2>over</h2> the lazy dog';
-    // Note: The createExcrept method adds some extra spaces -- not
-    // important for HTML formatting. Remove these for comparison.
-    $result = preg_replace('| +|', ' ', $createExcerpt->invoke($processor, $text, array('nothing')));
-    $this->assertEmpty($result, 'Nothing is returned when keyword is not found in short string');
-
-    $result = preg_replace('| +|', ' ', $createExcerpt->invoke($processor, $text, array('fox')));
-    $this->assertEquals($result, 'The quick brown <strong>fox</strong> &amp; jumps over the lazy dog', 'Found keyword is highlighted');
-
-    $expected = '<strong>The</strong> quick brown fox &amp; jumps over <strong>the</strong> lazy dog';
-    $result = preg_replace('| +|', ' ', $createExcerpt->invoke($processor, $text, array('The')));
-    $this->assertEquals(preg_replace('| +|', ' ', $result), $expected, 'Keyword is highlighted at beginning of short string');
-
-    $expected = 'The quick brown fox &amp; jumps over the lazy <strong>dog</strong>';
-    $result = preg_replace('| +|', ' ', $createExcerpt->invoke($processor, $text, array('dog')));
-    $this->assertEquals(preg_replace('| +|', ' ', $result), $expected, 'Keyword is highlighted at end of short string');
-
-    $longtext = str_repeat($text . ' ', 10);
-    $longtext .= ' cat ' . $longtext . ' rabbit ' . $longtext . ' mouse ';
-    $result = preg_replace('| +|', ' ', $createExcerpt->invoke($processor, $longtext, array('nothing')));
-    $this->assertEmpty($result, 'When keyword is not found in long string, nothing returned.');
-
-    $result = preg_replace('| +|', ' ', $createExcerpt->invoke($processor, $longtext, array('fox')));
-    $expected = 'The quick brown <strong>fox</strong> &amp; jumps over the lazy dog The quick brown <strong>fox</strong> &amp; jumps over the lazy dog The quick brown <strong>fox</strong> &amp; jumps over the lazy dog The quick brown <strong>fox</strong> &amp; ...';
-    $this->assertEquals($result, $expected, 'Snipets filled with multiple instances of a string.');
-
-
-    $result = preg_replace('| +|', ' ', $createExcerpt->invoke($processor, $longtext, array('cat', 'rabbit')));
-    $expected = '... The quick brown fox &amp; jumps over the lazy dog <strong>cat</strong> The quick brown fox &amp; jumps over the lazy dog The ... The quick brown fox &amp; jumps over the lazy dog <strong>rabbit</strong> The quick brown fox &amp; jumps over the lazy dog ...';
-    $this->assertEquals($result, $expected, 'Mulitple snippets are included when keywords are spread through string');
-
-    $configuration = $processor->getConfiguration();
-    $configuration['excerpt_length'] = 70;
-    $processor->setConfiguration($configuration);
-
-    $result = preg_replace('| +|', ' ', $createExcerpt->invoke($processor, $longtext, array('cat', 'mouse')));
-    $expected = '... The quick brown fox &amp; jumps over the lazy dog <strong>cat</strong> The quick brown fox &amp; jumps over the lazy dog The ... The quick brown fox &amp; jumps over the lazy dog <strong>mouse</strong>';
-    $this->assertEquals($result, $expected, 'Search snippets returned in shortened excerpt length.');
-
-    $entities = str_repeat('k&eacute;sz &iacute;t&eacute;se ', 20);
-    $result = preg_replace('| +|', ' ', $createExcerpt->invoke($processor, $entities, array('kész')));
-    $this->assertFalse(strpos($result, '&'), 'Entities are not present in excerpt');
-    $this->assertTrue(strpos($result, 'í') > 0, 'Entities are converted in excerpt');
-
-    // The node body that will produce this rendered $text is:
-    // 123456789 HTMLTest +123456789+&lsquo;  +&lsquo;  +&lsquo;  +&lsquo;  +12345678  &nbsp;&nbsp;  +&lsquo;  +&lsquo;  +&lsquo;   &lsquo;
-    $text = "<div class=\"field field-name-body field-type-text-with-summary field-label-hidden\"><div class=\"field-items\"><div class=\"field-item even\" property=\"content:encoded\"><p>123456789 HTMLTest +123456789+‘  +‘  +‘  +‘  +12345678      +‘  +‘  +‘   ‘</p>\n</div></div></div> ";
-    $result = $createExcerpt->invoke($processor, $text, array('HTMLTest'));
-    $this->assertFalse(empty($result),  'Rendered Multi-byte HTML encodings are not corrupted in search excerpts');
-    */
+  /**
+   * Returns a longer string to work with
+   * @return string
+   */
+  private function getFieldBody() {
+    return 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris dictum ultricies sapien id consequat.
+Fusce tristique erat at dui ultricies, eu rhoncus odio rutrum. Praesent viverra mollis mauris a cursus.
+Curabitur at condimentum orci. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.
+Praesent suscipit massa non pretium volutpat. Suspendisse id lacus facilisis, fringilla mauris vitae, tincidunt turpis.
+Proin a euismod libero. Nam aliquet neque nulla, nec placerat libero accumsan id. Quisque sit amet consequat lacus.
+Donec mauris erat, iaculis id nisl nec, dapibus posuere lectus. Sed ultrices libero id elit volutpat sagittis.
+Donec a tortor ullamcorper, tempus lectus at, ultrices felis. Nam nibh magna, dictum in massa ut, ornare venenatis enim.
+Phasellus enim massa, condimentum eu sem vel, consectetur fermentum erat. Cras porttitor ut dolor interdum vehicula.
+Vestibulum erat arcu, placerat quis gravida quis, venenatis vel magna. Pellentesque pellentesque lacus ut feugiat auctor.
+Mauris libero magna, dictum in fermentum nec, blandit non augue.
+Morbi sed viverra libero.Phasellus sem velit, sollicitudin in felis lacinia, suscipit auctor dolor.
+Praesent dignissim dolor sed lobortis mattis.
+Ut tristique, ligula sit amet condimentum dapibus, lorem nunc congue velit, et dictum augue leo sodales augue.
+Maecenas eget mi ac massa sagittis malesuada. Fusce ac purus vel ipsum imperdiet vulputate.
+Mauris vestibulum sapien sit amet elementum tincidunt. Aenean sollicitudin tortor pulvinar ante commodo sagittis.
+Integer in nisi consequat, elementum felis in, consequat purus. Maecenas blandit ipsum id tellus accumsan, sit amet venenatis orci vestibulum.
+Ut id erat venenatis, vehicula mi eget, gravida odio. Etiam dapibus purus in massa condimentum, vitae lobortis est aliquam.
+Morbi tristique velit et sem varius rhoncus. In tincidunt sagittis libero. Integer interdum sit amet sem sit amet sodales.
+Donec sit amet arcu sit amet leo tristique dignissim vel ut enim. Nulla faucibus lacus eu adipiscing semper. Sed ut sodales erat.
+Sed mauris purus, tempor non eleifend et, mollis ut lacus. Etiam interdum velit justo, nec imperdiet nunc pulvinar sit amet.
+Sed eu lacus eget augue laoreet vehicula id sed sem. Maecenas at condimentum massa, et pretium nulla. Aliquam sed nibh velit.
+Quisque turpis lacus, sodales nec malesuada nec, commodo non purus.
+Cras pellentesque, lectus ut imperdiet euismod, purus sem convallis tortor, ut fermentum elit nulla et quam.
+Mauris luctus mattis enim non accumsan. Sed consequat sapien lorem, in ultricies orci posuere nec.
+Fusce in mauris eu leo fermentum feugiat. Proin varius diam ante, non eleifend ipsum luctus sed.';
   }
 
 }

@@ -13,6 +13,8 @@ use Drupal\system\Tests\Entity\EntityLanguageTestBase;
 
 /**
  * Tests translation handling of the content entity datasource.
+ *
+ * @group search_api
  */
 class LanguageIntegrationUnitTest extends EntityLanguageTestBase {
 
@@ -47,17 +49,6 @@ class LanguageIntegrationUnitTest extends EntityLanguageTestBase {
   /**
    * {@inheritdoc}
    */
-  public static function getInfo() {
-    return array(
-      'name' => 'Search API Item Translation',
-      'description' => 'Tests Search API item translation functionality.',
-      'group' => 'Search API',
-    );
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function setUp() {
     parent::setUp();
 
@@ -68,7 +59,7 @@ class LanguageIntegrationUnitTest extends EntityLanguageTestBase {
       'name' => $this->randomString(),
       'machine_name' => $this->randomName(),
       'status' => 1,
-      'backendPluginId' => 'search_api_test_backend',
+      'backend' => 'search_api_test_backend',
     ));
     $this->server->save();
 
@@ -77,9 +68,9 @@ class LanguageIntegrationUnitTest extends EntityLanguageTestBase {
       'name' => $this->randomString(),
       'machine_name' => $this->randomName(),
       'status' => 1,
-      'datasourcePluginIds' => array('entity:' . $this->testEntityTypeId),
-      'trackerPluginId' => 'default_tracker',
-      'serverMachineName' => $this->server->id(),
+      'datasources' => array('entity:' . $this->testEntityTypeId),
+      'tracker' => 'default_tracker',
+      'server' => $this->server->id(),
       'options' => array('index_directly' => FALSE),
     ));
     $this->index->save();

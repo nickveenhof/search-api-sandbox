@@ -19,7 +19,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * @SearchApiProcessor(
  *   id = "rendered_item",
- *   label = @Translation("Rendered Item"),
+ *   label = @Translation("Rendered item"),
  *   description = @Translation("Adds an additional field containing the rendered item as it would look when viewed.")
  * );
  */
@@ -33,19 +33,20 @@ class RenderedItem extends ProcessorPluginBase {
   protected $currentUser;
 
   /**
-   * The typed data manager used by this plugin.
+   * Constructs a new "Rendered item" processor.
    *
-   * @var \Drupal\Core\TypedData\TypedDataManager
+   * @param \Drupal\Core\Session\AccountProxyInterface $current_user
+   *   An object storing information about the current account.
+   * @param array $configuration
+   *   A configuration array containing information about the plugin instance.
+   * @param string $plugin_id
+   *   The plugin_id for the plugin instance.
+   * @param mixed $plugin_definition
+   *   The plugin implementation definition.
    */
-  protected $typedDataManager;
-
-  /**
-   * {@inheritdoc}
-   */
-  public function __construct(AccountProxyInterface $current_user, TypedDataManager $typed_data_manager, array $configuration, $plugin_id, array $plugin_definition) {
+  public function __construct(AccountProxyInterface $current_user, array $configuration, $plugin_id, array $plugin_definition) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->currentUser = $current_user;
-    $this->typedDataManager = $typed_data_manager;
   }
 
   /**
@@ -54,9 +55,7 @@ class RenderedItem extends ProcessorPluginBase {
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
     /** @var \Drupal\Core\Session\AccountProxyInterface $current_user */
     $current_user = $container->get('current_user');
-    /** @var \Drupal\Core\TypedData\TypedDataManager $typed_data_manager */
-    $typed_data_manager = $container->get('typed_data_manager');
-    return new static($current_user, $typed_data_manager, $configuration, $plugin_id, $plugin_definition);
+    return new static($current_user, $configuration, $plugin_id, $plugin_definition);
   }
 
   /**
@@ -80,7 +79,7 @@ class RenderedItem extends ProcessorPluginBase {
       if (count($view_modes) > 1) {
         $form['view_mode'][$datasource_id] = array(
           '#type' => 'select',
-          '#title' => t('View mode for data source @datasource', array('@datasource' => $datasource->label())),
+          '#title' => $this->t('View mode for data source @datasource', array('@datasource' => $datasource->label())),
           '#options' => $view_modes,
         );
         if (isset($this->configuration['view_mode'][$datasource_id])) {
@@ -98,7 +97,7 @@ class RenderedItem extends ProcessorPluginBase {
     $form['roles'] = array(
       '#type' => 'select',
       '#title' => $this->t('User roles'),
-      '#description' => t('The data will be processed as seen by a user with the selected roles.'),
+      '#description' => $this->t('The data will be processed as seen by a user with the selected roles.'),
       '#options' => user_role_names(),
       '#multiple' => TRUE,
       '#default_value' => $this->configuration['roles'],
@@ -132,8 +131,10 @@ class RenderedItem extends ProcessorPluginBase {
     /** @var \Drupal\search_api\Item\ItemInterface[] $items */
 
     // To exploit any performance improvements that come with viewing multiple
-    // objects at once,
-    // First, extract all the passed item objects.
+    // objects at once, we first extract the passed objects and group them by
+    // datasource, and only then view them.
+    // We could do this for getting the original objects, but they should
+    // already be set when indexing anyways.
     $item_objects = array();
     /** @var \Drupal\search_api\Item\FieldInterface[] $item_fields */
     $item_fields = array();

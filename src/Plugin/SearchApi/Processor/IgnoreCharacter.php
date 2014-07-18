@@ -19,7 +19,6 @@ use Drupal\search_api\Plugin\SearchApi\Processor\Resources\Ps;
 use Drupal\search_api\Plugin\SearchApi\Processor\Resources\Cc;
 use Drupal\search_api\Plugin\SearchApi\Processor\Resources\Cf;
 use Drupal\search_api\Plugin\SearchApi\Processor\Resources\Co;
-use Drupal\search_api\Plugin\SearchApi\Processor\Resources\Cs;
 use Drupal\search_api\Plugin\SearchApi\Processor\Resources\Mc;
 use Drupal\search_api\Plugin\SearchApi\Processor\Resources\Me;
 use Drupal\search_api\Plugin\SearchApi\Processor\Resources\Mn;
@@ -33,9 +32,9 @@ use Drupal\search_api\Plugin\SearchApi\Processor\Resources\Zs;
 
 /**
  * @SearchApiProcessor(
- *   id = "ignoreCharacter",
- *   label = @Translation("Ignore Character processor"),
- *   description = @Translation("Ignore/Remove characters from search strings.")
+ *   id = "ignore_character",
+ *   label = @Translation("Ignore characters"),
+ *   description = @Translation("Configure types of characters which should be ignored for searches.")
  * )
  */
 class IgnoreCharacter extends FieldsProcessorPluginBase {
@@ -73,16 +72,16 @@ class IgnoreCharacter extends FieldsProcessorPluginBase {
 
     $form['ignorable'] = array(
       '#type' => 'textfield',
-      '#title' => t('Ignorable characters'),
-      '#description' => t('Specify characters which should be removed from fulltext fields and search strings (e.g., "-"). It is placed in a regular expression function as such: preg_replace(\[\'¿¡!?,.:;]+/u)'),
+      '#title' => $this->t('Ignorable characters'),
+      '#description' => $this->t('Specify characters which should be removed from fulltext fields and search strings (e.g., "-"). It is placed in a regular expression function as such: preg_replace(\[\'¿¡!?,.:;]+/u)'),
       '#default_value' => $this->configuration['ignorable'],
     );
 
     $character_sets = $this->getCharacterSets();
     $form['strip'] = array(
       '#type' => 'details',
-      '#title' => t('Character Sets to remove from text'),
-      '#description' => t('These character set remove any punctuation characters or any other that you configure. This allows you to send only useful characters to your search index.'),
+      '#title' => $this->t('Character Sets to remove from text'),
+      '#description' => $this->t('These character set remove any punctuation characters or any other that you configure. This allows you to send only useful characters to your search index.'),
       '#open' => FALSE,
     );
     // Build the bundle selection element.
@@ -107,7 +106,7 @@ class IgnoreCharacter extends FieldsProcessorPluginBase {
     $ignorable = str_replace('/', '\/', $form_state['values']['ignorable']);
     if (@preg_match('/(' . $ignorable . ')+/u', '') === FALSE) {
       $el = $form['ignorable'];
-      \Drupal::formBuilder()->setError($el, $form_state, $el['#title'] . ': ' . t('The entered text is no valid regular expression.'));
+      \Drupal::formBuilder()->setError($el, $form_state, $el['#title'] . ': ' . $this->t('The entered text is no valid regular expression.'));
     }
   }
 
@@ -116,22 +115,6 @@ class IgnoreCharacter extends FieldsProcessorPluginBase {
    */
   protected function testType($type) {
     return Utility::isTextType($type, array('text', 'tokenized_text', 'string'));
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function processFieldValue(&$value, &$type) {
-    $this->prepare();
-    // Remove the characters we do not want
-    if ($this->ignorable) {
-      $value = preg_replace('/(' . $this->ignorable . ')+/u', '', $value);
-    }
-
-    // Strip the character sets
-    if (!empty($this->configuration['strip']['character_sets'])) {
-      $value = $this->stripCharacterSets($value);
-    }
   }
 
   /**
@@ -165,13 +148,11 @@ class IgnoreCharacter extends FieldsProcessorPluginBase {
     $this->prepare();
     // We don't touch integers, NULL values or the like.
     if ($this->ignorable) {
-      $this->prepare();
       $value = preg_replace('/' . $this->ignorable . '+/u', '', $value);
     }
-    if (is_string($value)) {
-      if (!empty($this->configuration['strip']['character_sets'])) {
-        $value = $this->stripCharacterSets($value);
-      }
+
+    if (!empty($this->configuration['strip']['character_sets'])) {
+      $value = $this->stripCharacterSets($value);
     }
   }
 
@@ -240,31 +221,29 @@ class IgnoreCharacter extends FieldsProcessorPluginBase {
    */
   protected function getCharacterSets() {
     return array(
-      'Pc' => t("Punctuation, Connector Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Pc/list.htm"))),
-      'Pd' => t("Punctuation, Dash Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Pd/list.htm"))),
-      'Pe' => t("Punctuation, Close Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Pe/list.htm"))),
-      'Pf' => t("Punctuation, Final quote Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Pf/list.htm"))),
-      'Pi' => t("Punctuation, Initial quote Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Pi/list.htm"))),
-      'Po' => t("Punctuation, Other Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Po/list.htm"))),
-      'Ps' => t("Punctuation, Open Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Ps/list.htm"))),
+      'Pc' => $this->t("Punctuation, Connector Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Pc/list.htm"))),
+      'Pd' => $this->t("Punctuation, Dash Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Pd/list.htm"))),
+      'Pe' => $this->t("Punctuation, Close Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Pe/list.htm"))),
+      'Pf' => $this->t("Punctuation, Final quote Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Pf/list.htm"))),
+      'Pi' => $this->t("Punctuation, Initial quote Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Pi/list.htm"))),
+      'Po' => $this->t("Punctuation, Other Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Po/list.htm"))),
+      'Ps' => $this->t("Punctuation, Open Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Ps/list.htm"))),
+      'Cc' => $this->t("Other, Control Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Cc/list.htm"))),
+      'Cf' => $this->t("Other, Format Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Cf/list.htm"))),
+      'Co' => $this->t("Other, Private Use Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Co/list.htm"))),
 
-      // @todo, find out why Other control characters are not found. Perhaps they are already stripped?
-      //'Cc' => t("Other, Control Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Cc/list.htm"))),
-      'Cf' => t("Other, Format Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Cf/list.htm"))),
-      'Co' => t("Other, Private Use Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Co/list.htm"))),
+      'Mc' => $this->t("Mark, Spacing Combining Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Mc/list.htm"))),
+      'Me' => $this->t("Mark, Enclosing Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Me/list.htm"))),
+      'Mn' => $this->t("Mark, Nonspacing Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Mn/list.htm"))),
 
-      'Mc' => t("Mark, Spacing Combining Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Mc/list.htm"))),
-      'Me' => t("Mark, Enclosing Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Me/list.htm"))),
-      'Mn' => t("Mark, Nonspacing Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Mn/list.htm"))),
+      'Sc' => $this->t("Symbol, Currency Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Sc/list.htm"))),
+      'Sk' => $this->t("Symbol, Modifier Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Sk/list.htm"))),
+      'Sm' => $this->t("Symbol, Math Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Sm/list.htm"))),
+      'So' => $this->t("Symbol, Other Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/So/list.htm"))),
 
-      'Sc' => t("Symbol, Currency Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Sc/list.htm"))),
-      'Sk' => t("Symbol, Modifier Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Sk/list.htm"))),
-      'Sm' => t("Symbol, Math Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Sm/list.htm"))),
-      'So' => t("Symbol, Other Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/So/list.htm"))),
-
-      'Zl' => t("Separator, Line Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Zl/list.htm"))),
-      'Zp' => t("Separator, Paragraph Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Zp/list.htm"))),
-      'Zs' => t("Separator, Space Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Zs/list.htm"))),
+      'Zl' => $this->t("Separator, Line Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Zl/list.htm"))),
+      'Zp' => $this->t("Separator, Paragraph Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Zp/list.htm"))),
+      'Zs' => $this->t("Separator, Space Characters (!link)", array("!link" => l("View","http://www.fileformat.info/info/unicode/category/Zs/list.htm"))),
     );
   }
 

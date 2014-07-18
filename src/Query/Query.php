@@ -7,6 +7,8 @@
 
 namespace Drupal\search_api\Query;
 
+use Drupal\Component\Utility\String;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\search_api\Exception\SearchApiException;
 use Drupal\search_api\Index\IndexInterface;
 
@@ -14,6 +16,8 @@ use Drupal\search_api\Index\IndexInterface;
  * Provides a standard implementation of the QueryInterface.
  */
 class Query implements QueryInterface {
+
+  use StringTranslationTrait;
 
   /**
    * The index on which the query will be executed.
@@ -95,12 +99,12 @@ class Query implements QueryInterface {
    */
   public function __construct(IndexInterface $index, array $options = array()) {
     if (!$index->status()) {
-      throw new SearchApiException(t("Can't search on a disabled index."));
+      throw new SearchApiException("Can't search on a disabled index.");
     }
     if (isset($options['parse mode'])) {
       $modes = $this->parseModes();
       if (!isset($modes[$options['parse mode']])) {
-        throw new SearchApiException(t('Unknown parse mode: @mode.', array('@mode' => $options['parse mode'])));
+        throw new SearchApiException(String::format('Unknown parse mode: @mode.', array('@mode' => $options['parse mode'])));
       }
     }
     $this->index = $index;
@@ -126,17 +130,17 @@ class Query implements QueryInterface {
    */
   public function parseModes() {
     $modes['direct'] = array(
-      'name' => t('Direct query'),
-      'description' => t("Don't parse the query, just hand it to the search server unaltered. " .
+      'name' => $this->t('Direct query'),
+      'description' => $this->t("Don't parse the query, just hand it to the search server unaltered. " .
           "Might fail if the query contains syntax errors in regard to the specific server's query syntax."),
     );
     $modes['single'] = array(
-      'name' => t('Single term'),
-      'description' => t('The query is interpreted as a single keyword, maybe containing spaces or special characters.'),
+      'name' => $this->t('Single term'),
+      'description' => $this->t('The query is interpreted as a single keyword, maybe containing spaces or special characters.'),
     );
     $modes['terms'] = array(
-      'name' => t('Multiple terms'),
-      'description' => t('The query is interpreted as multiple keywords seperated by spaces. ' .
+      'name' => $this->t('Multiple terms'),
+      'description' => $this->t('The query is interpreted as multiple keywords seperated by spaces. ' .
           'Keywords containing spaces may be "quoted". Quoted keywords must still be seperated by spaces.'),
     );
     // @todo Add fourth mode for complicated expressions, e.g.: »"vanilla ice" OR (love NOT hate)«
@@ -226,7 +230,7 @@ class Query implements QueryInterface {
   public function fields(array $fields) {
     $fulltext_fields = $this->index->getFulltextFields();
     foreach (array_diff($fields, $fulltext_fields) as $field) {
-      throw new SearchApiException(t('Trying to search on field @field which is no indexed fulltext field.', array('@field' => $field)));
+      throw new SearchApiException(String::format('Trying to search on field @field which is no indexed fulltext field.', array('@field' => $field)));
     }
     $this->fields = $fields;
     return $this;
@@ -258,7 +262,7 @@ class Query implements QueryInterface {
       'search_api_id' => array('type' => 'integer'),
     );
     if (empty($fields[$field])) {
-      throw new SearchApiException(t('Trying to sort on unknown field @field.', array('@field' => $field)));
+      throw new SearchApiException(String::format('Trying to sort on unknown field @field.', array('@field' => $field)));
     }
     $order = strtoupper(trim($order)) == 'DESC' ? 'DESC' : 'ASC';
     $this->sort[$field] = $order;

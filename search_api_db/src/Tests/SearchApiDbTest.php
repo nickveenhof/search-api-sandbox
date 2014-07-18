@@ -9,16 +9,27 @@ namespace Drupal\search_api_db\Tests;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\search_api\Query\ResultSetInterface;
 use Drupal\search_api\Tests\ExampleContentTrait;
 use Drupal\system\Tests\Entity\EntityUnitTestBase;
 
 /**
  * Tests index and search capabilities using the Database search backend.
+ *
+ * @group search_api
  */
 class SearchApiDbTest extends EntityUnitTestBase {
 
   use ExampleContentTrait;
+  use StringTranslationTrait;
+
+  /**
+   * Modules to enable.
+   *
+   * @var array
+   */
+  public static $modules = array('field', 'menu_link', 'search_api', 'search_api_db', 'search_api_test_db');
 
   /**
    * A Search API server ID.
@@ -33,24 +44,6 @@ class SearchApiDbTest extends EntityUnitTestBase {
    * @var string
    */
   protected $indexId = 'database_search_index';
-
-  /**
-   * Modules to enable.
-   *
-   * @var array
-   */
-  public static $modules = array('field', 'search_api', 'search_api_db', 'search_api_test_db');
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function getInfo() {
-    return array(
-      'name' => 'Test "Database search" module',
-      'description' => 'Tests indexing and searching with the "Database search" module.',
-      'group' => 'Search API',
-    );
-  }
 
   /**
    * {@inheritdoc}
@@ -119,8 +112,8 @@ class SearchApiDbTest extends EntityUnitTestBase {
     /** @var \Drupal\search_api\Server\ServerInterface $server */
     $server = entity_load('search_api_server', $this->serverId);
 
-    $normalized_storage_table = $server->getBackendPluginConfig()['index_tables'][$this->indexId];
-    $field_tables = $server->getBackendPluginConfig()['field_tables'][$this->indexId];
+    $normalized_storage_table = $server->getBackendConfig()['index_tables'][$this->indexId];
+    $field_tables = $server->getBackendConfig()['field_tables'][$this->indexId];
 
     $this->assertTrue(\Drupal::database()->schema()->tableExists($normalized_storage_table), 'Normalized storage table exists');
     foreach ($field_tables as $field_table) {
@@ -153,7 +146,7 @@ class SearchApiDbTest extends EntityUnitTestBase {
     /** @var \Drupal\search_api\Server\ServerInterface $server */
     $server = entity_load('search_api_server', $this->serverId, TRUE);
     $index_fields = array_keys($index->options['fields']);
-    $server_fields = array_keys($server->backendPluginConfig['field_tables'][$index->id()]);
+    $server_fields = array_keys($server->getBackendConfig()['field_tables'][$index->id()]);
     sort($index_fields);
     sort($server_fields);
     $this->assertEqual($index_fields, $server_fields);
@@ -173,24 +166,24 @@ class SearchApiDbTest extends EntityUnitTestBase {
       'type' => 'text',
     );
 
-    $index->setOption('processors', array(
-      'html_filter' => array(
-        'status' => TRUE,
-        'weight' => 0,
-      ),
-    ));
+    $processors = $index->getOption('processors');
+    $processors['html_filter'] = array(
+      'status' => TRUE,
+      'weight' => 0,
+    );
+    $index->setOption('processors', $processors);
     $index->save();
   }
 
   protected function disableHtmlFilter() {
     /** @var \Drupal\search_api\Index\IndexInterface $index */
     $index = entity_load('search_api_index', $this->indexId);
-    $index->setOption('processors', array(
-      'html_filter' => array(
-        'status' => FALSE,
-        'weight' => 0,
-      ),
-    ));
+    $processors = $index->getOption('processors');
+    $processors['html_filter'] = array(
+      'status' => FALSE,
+      'weight' => 0,
+    );
+    $index->setOption('processors', $processors);
     // Remove a field from the index and check if the change is matched in
     // the server configuration.
     unset($index->options['fields'][$this->getFieldId('body')]);
@@ -324,7 +317,9 @@ class SearchApiDbTest extends EntityUnitTestBase {
 
   protected function editServer() {
     $server = entity_load('search_api_server', $this->serverId, TRUE);
-    $server->backendPluginConfig['min_chars'] = 4;
+    $backend_config = $server->getBackendConfig();
+    $backend_config['min_chars'] = 4;
+    $server->set('backend_config', $backend_config);
     $success = (bool) $server->save();
     $this->assertTrue($success, 'The server was successfully edited.');
 
@@ -358,7 +353,7 @@ class SearchApiDbTest extends EntityUnitTestBase {
     $this->assertEqual($results->getResultCount(), 3, 'Search for »foo« returned correct number of results.');
     $this->assertEqual(array_keys($results->getResultItems()), $this->getItemIds(array(1, 2, 3)), 'Search for »foo« returned correct result.');
     $this->assertIgnored($results, array('foo'), 'Short key was ignored.');
-    $this->assertWarnings($results, array(t('No valid search keys were present in the query.')), 'No warnings were displayed.');
+    $this->assertWarnings($results, array($this->t('No valid search keys were present in the query.')), 'No warnings were displayed.');
 
     $keys = array(
       '#conjunction' => 'AND',
@@ -753,11 +748,11 @@ class SearchApiDbTest extends EntityUnitTestBase {
 
     // Remove first the index and then the server.
     $index = entity_load('search_api_index', $this->indexId, TRUE);
-    $index->serverMachineName = NULL;
+    $index->server = NULL;
     $index->save();
 
     $server = entity_load('search_api_server', $this->serverId, TRUE);
-    $this->assertEqual($server->backendPluginConfig['field_tables'], array(), 'The index was successfully removed from the server.');
+    $this->assertEqual($server->getBackendConfig()['field_tables'], array(), 'The index was successfully removed from the server.');
     $this->assertFalse(db_table_exists($table), 'The index tables were deleted.');
     $server->delete();
 

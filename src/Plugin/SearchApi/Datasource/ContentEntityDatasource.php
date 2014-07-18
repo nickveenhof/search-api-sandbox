@@ -18,6 +18,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\EntityManager;
 use Drupal\search_api\Datasource\DatasourcePluginBase;
 use Drupal\Component\Utility\String;
+use Drupal\Core\Render\Element;
 
 /**
  * Represents a datasource which exposes the content entities.
@@ -26,7 +27,7 @@ use Drupal\Component\Utility\String;
  *   id = "entity",
  *   name = @Translation("Content entity datasource"),
  *   description = @Translation("Exposes the content entities as datasource."),
- *   derivative = "Drupal\search_api\Plugin\SearchApi\Datasource\ContentEntityDatasourceDerivative"
+ *   deriver = "Drupal\search_api\Plugin\SearchApi\Datasource\ContentEntityDatasourceDeriver"
  * )
  */
 class ContentEntityDatasource extends DatasourcePluginBase implements ContainerFactoryPluginInterface {
@@ -466,7 +467,7 @@ class ContentEntityDatasource extends DatasourcePluginBase implements ContainerF
   public function getViewModes() {
     $view_modes = $this->entityManager->getViewModeOptions($this->getEntityTypeId());
     if (empty($view_modes)) {
-      $view_modes = array('default' => t('Default'));
+      $view_modes = array('default' => $this->t('Default'));
     }
     return $view_modes;
   }
@@ -516,9 +517,16 @@ class ContentEntityDatasource extends DatasourcePluginBase implements ContainerF
         $build += $view_builder->viewMultiple($language_items, $view_mode, $langcode);
       }
       // Lastly, bring the viewed items into the correct order again.
+      // The properties, particularly #pre_render, are required on each
+      // build item.
+      $properties = Element::properties($build);
+      foreach ($properties as $property) {
+        $meta[$property] = $build[$property];
+      }
+      // In the original non-language order, adding properties.
       $ret = array();
       foreach ($items as $i => $item) {
-        $ret[$i] = isset($build[$i]) ? $build[$i] : array();
+        $ret[$i] = isset($build[$i]) ? $meta + array($i => $build[$i]) : array();
       }
       return $ret;
     }
@@ -545,7 +553,7 @@ class ContentEntityDatasource extends DatasourcePluginBase implements ContainerF
     $entity_bundle = $entity->bundle();
 
     $index_names = \Drupal::entityQuery('search_api_index')
-      ->condition('datasourcePluginIds.*', $datasource_id)
+      ->condition('datasources.*', $datasource_id)
       ->execute();
 
     if (!$index_names) {
@@ -627,7 +635,7 @@ class ContentEntityDatasource extends DatasourcePluginBase implements ContainerF
         if ($field_definition instanceof FieldInstanceConfigInterface) {
           if (in_array($field_name, $direct_fields) || isset($nested_fields[$field_name])) {
             $field_dependencies[$field_definition->getConfigDependencyName()] = TRUE;
-            $field_dependencies[$field_definition->getField()->getConfigDependencyName()] = TRUE;
+            $field_dependencies[$field_definition->getFieldStorageDefinition()->getConfigDependencyName()] = TRUE;
           }
 
           // Recurse for nested fields.
