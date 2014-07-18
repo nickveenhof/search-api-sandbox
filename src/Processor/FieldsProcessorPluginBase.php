@@ -370,7 +370,8 @@ abstract class FieldsProcessorPluginBase extends ProcessorPluginBase {
    *
    * @param string $value
    *   The string value to preprocess, as a reference. Can be manipulated
-   *   directly, nothing has to be returned. Has to remain a string.
+   *   directly, nothing has to be returned. Has to remain a string. Set to an
+   *   empty string to remove the filter.
    */
   protected function processFilterValue(&$value) {
     $this->process($value);
