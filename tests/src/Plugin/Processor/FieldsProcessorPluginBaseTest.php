@@ -8,6 +8,7 @@
 namespace Drupal\search_api\Tests\Plugin\Processor;
 
 use Drupal\search_api\Tests\Processor\TestItemsTrait;
+use Drupal\search_api\Utility\Utility;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -31,7 +32,7 @@ class FieldsProcessorPluginBaseTest extends UnitTestCase {
   /**
    * The class under test.
    *
-   * @var \Drupal\search_api\Processor\FieldsProcessorPluginBase|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\search_api\Tests\Plugin\Processor\TestFieldsProcessorPlugin
    */
   protected $processor;
 
@@ -42,13 +43,15 @@ class FieldsProcessorPluginBaseTest extends UnitTestCase {
     parent::setUp();
 
     $this->index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+    $this->index->expects($this->any())
+      ->method('status')
+      ->will($this->returnValue(TRUE));
+    $fields = $this->getTestItem()[$this->item_ids[0]]->getFields();
+    $this->index->expects($this->any())
+      ->method('getFields')
+      ->will($this->returnValue($fields));
 
-    $this->processor = $this->getMockBuilder('Drupal\search_api\Processor\FieldsProcessorPluginBase')
-      ->disableOriginalConstructor()
-      ->getMock();
-    $this->processor->expects($this->any())
-      ->method('process')
-      ->willReturnCallback(function ($value) { return "*$value"; });
+    $this->processor = new TestFieldsProcessorPlugin(array('index' => $this->index), '', array());
   }
 
   /**
@@ -57,19 +60,162 @@ class FieldsProcessorPluginBaseTest extends UnitTestCase {
   public function testTestTypeDefault() {
     $items = $this->getTestItem();
     $this->processor->preprocessIndexItems($items);
-    $this->verifyFieldsProcessed($items, array('text_field', 'tokenized_text_field', 'string_field'));
+    $this->verifyFieldsProcessed($items, array('text_field', 'string_field'));
+  }
+
+  /**
+   * Tests whether overriding of testType() works correctly.
+   */
+  public function testTestTypeOverride() {
+    $override = function ($type) {
+      return Utility::isTextType($type, array('string', 'integer'));
+    };
+    $this->processor->setMethodOverride('testType', $override);
+
+    $items = $this->getTestItem();
+    $this->processor->preprocessIndexItems($items);
+    $this->verifyFieldsProcessed($items, array('string_field', 'integer_field'));
+  }
+
+  /**
+   * Tests whether selecting fields works correctly.
+   */
+  public function testTestField() {
+    // testType() shouldn't have any effect anymore when fields are configured.
+    $override = function () {
+      return FALSE;
+    };
+    $this->processor->setMethodOverride('testType', $override);
+    $configuration['fields'] = array('text_field' => 'text_field', 'float_field' => 'float_field');
+    $this->processor->setConfiguration($configuration);
+
+    $items = $this->getTestItem();
+    $this->processor->preprocessIndexItems($items);
+    $this->verifyFieldsProcessed($items, array('text_field', 'float_field'));
+  }
+
+  /**
+   * Tests whether overriding of processFieldValue() works correctly.
+   */
+  public function testProcessFieldValueOverride() {
+    $override = function (&$value, &$type) {
+      if (strpos($value, "{$type}_field") !== FALSE) {
+        $value = "&$value";
+      }
+      else {
+        $value = "/$value";
+      }
+    };
+    $this->processor->setMethodOverride('processFieldValue', $override);
+
+    $items = $this->getTestItem();
+    $this->processor->preprocessIndexItems($items);
+    $this->verifyFieldsProcessed($items, array('text_field', 'string_field'), '&');
+  }
+
+  /**
+   * Tests whether preprocessing of queries without search keys works correctly.
+   */
+  public function testProcessKeysNoKeys() {
+    $query = Utility::createQuery($this->index);
+
+    $this->processor->preprocessSearchQuery($query);
+
+    $this->assertNull($query->getKeys(), 'Query without keys was correctly ignored.');
+  }
+
+  /**
+   * Tests whether preprocessing of simple search keys works correctly.
+   */
+  public function testProcessKeysSimple() {
+    $query = Utility::createQuery($this->index);
+    $keys = &$query->getKeys();
+    $keys = 'foo';
+
+    $this->processor->preprocessSearchQuery($query);
+
+    $this->assertEquals('*foo', $query->getKeys(), 'Search keys were correctly preprocessed.');
+  }
+
+  /**
+   * Tests whether preprocessing of complex search keys works correctly.
+   */
+  public function testProcessKeysComplex() {
+    $query = Utility::createQuery($this->index);
+    $keys = &$query->getKeys();
+    $keys = array(
+      '#conjunction' => 'OR',
+      'foo',
+      array(
+        '#conjunction' => 'AND',
+        'bar',
+        'baz',
+        '#negation' => TRUE,
+      ),
+    );
+
+    $this->processor->preprocessSearchQuery($query);
+
+    $expected = array(
+      '#conjunction' => 'OR',
+      '*foo',
+      array(
+        '#conjunction' => 'AND',
+        '*bar',
+        '*baz',
+        '#negation' => TRUE,
+      ),
+    );
+    $this->assertEquals($expected, $query->getKeys(), 'Search keys were correctly preprocessed.');
+  }
+
+  /**
+   * Tests whether overriding of processKey() works correctly.
+   */
+  public function testProcessKeyOverride() {
+    $override = function (&$value) {
+      $value = "&$value";
+    };
+    $this->processor->setMethodOverride('processKey', $override);
+
+    $query = Utility::createQuery($this->index);
+    $keys = & $query->getKeys();
+    $keys = 'foo';
+
+    $this->processor->preprocessSearchQuery($query);
+
+    $this->assertEquals('&foo', $query->getKeys(), 'Search keys were correctly preprocessed.');
+  }
+
+  /**
+   * Tests whether preprocessing search filters works correctly.
+   */
+  public function testProcessFilters() {
+    $query = Utility::createQuery($this->index);
+    $query->condition('text_field', 'foo');
+    $query->condition('string_field', NULL, '<>');
+    $query->condition('integer_field', 'bar');
+
+    $this->processor->preprocessSearchQuery($query);
+
+    $expected = array(
+      array('text_field', '*foo', '='),
+      array('string_field', 'undefined', '<>'),
+      array('integer_field', 'bar', '='),
+    );
+    $this->assertEquals($expected, $query->getFilter()->getFilters(), 'Filters were preprocessed correctly.');
   }
 
   /**
    * Returns an array with one test item suitable for this test case.
    *
    * @param string[] $types
-   *   The types of fields to create.
+   *   (optional) The types of fields to create.
    *
    * @return \Drupal\search_api\Item\ItemInterface[]
    *   An array containing one item.
    */
-  protected function getTestItem($types = array('text', 'tokenized_text', 'string', 'integer', 'float')) {
+  protected function getTestItem($types = array('text', 'string', 'integer', 'float')) {
     $fields = array();
     foreach ($types as $type) {
       $field_id = "{$type}_field";
@@ -91,15 +237,17 @@ class FieldsProcessorPluginBaseTest extends UnitTestCase {
    *   An array containing one item.
    * @param string[] $processed_fields
    *   The fields which should be processed.
+   * @param string $prefix
+   *   (optional) The prefix that processed fields receive.
    */
-  protected function verifyFieldsProcessed(array $items, array $processed_fields) {
+  protected function verifyFieldsProcessed(array $items, array $processed_fields, $prefix = "*") {
     $processed_fields = array_fill_keys($processed_fields, TRUE);
     foreach ($items as $item) {
       foreach ($item->getFields() as $field_id => $field) {
         if (!empty($processed_fields[$field_id])) {
           $expected = array(
-            "*$field_id value 1",
-            "*$field_id value 2",
+            "$prefix$field_id value 1",
+            "$prefix$field_id value 2",
           );
         }
         else {
