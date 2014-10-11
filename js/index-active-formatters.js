@@ -9,39 +9,60 @@
 
   Drupal.behaviors.searchApiIndexFormatter = {
     attach: function (context, settings) {
-      $('.search-api-status-wrapper input.form-checkbox', context).once('search-api-status', function () {
+      $('.search-api-status-wrapper input.form-checkbox', context).each(function () {
         var $checkbox = $(this);
-        // Retrieve the table row belonging to this processor.
-        var $row = $('#' + $checkbox.attr('id').replace(/-status$/, '-weight'), context).closest('tr');
-        // Retrieve the vertical tab belonging to this processor.
-        var $tab = $('#' + $checkbox.attr('id').replace(/-status$/, '-settings'), context).data('verticalTab');
+        var $parts = $checkbox.attr('name').split('[');
+
+        // Name, remove the last ].
+        var $name = $parts[1].slice(0, -1);
+
+        // Stage, remove the last _status].
+        var $stage = $parts[2].slice(0, -1);
+
+        // Other checkboxes for same processor.
+        var $other = $('input.search-api-processor-status-' + $name).not(this);
+
+        // Weight row.
+        var $row = $("select[name='processors[" + $name + "][" + $stage + "][weight]']", context).closest('tr');
+
+        // Settings tab.
+        var $tab = $('.search-api-processor-settings-' + $name, context).data('verticalTab');
+
+        // The tabledrag table.
+        var $stageFieldset = $(this).closest('fieldset');
 
         // Bind a click handler to this checkbox to conditionally show and hide
         // the filter's table row and vertical tab pane.
-        $checkbox.bind('click.searchApiUpdate', function () {
+        $checkbox.on('click.searchApiUpdate', function () {
           if ($checkbox.is(':checked')) {
-            $('#edit-order').show();
-            $('.tabledrag-toggle-weight-wrapper').show();
+            $('#edit-' + $stage + '-order').show();
+            $('#edit-' + $stage + ' .tabledrag-toggle-weight-wrapper').show();
             $row.show();
             if ($tab) {
               $tab.tabShow().updateSummary();
             }
+            // By default processors are enabled in all stages, they can be
+            // disabled manually if only one stage is actually desired.
+            if ($other.length) {
+              $other.prop('checked', true);
+              $other.triggerHandler('click.searchApiUpdate');
+            }
           }
           else {
-            var $enabled_processors = $('.search-api-status-wrapper input.form-checkbox:checked').length;
+            var $enabled_processors = $stageFieldset.find('input.form-checkbox:checked').length;
 
             if (!$enabled_processors) {
-              $('#edit-order').hide();
-              $('.tabledrag-toggle-weight-wrapper').hide();
+              $('#edit-' + $stage + '-order').hide();
+              $('#edit-' + $stage + ' .tabledrag-toggle-weight-wrapper').hide();
             }
 
             $row.hide();
-            if ($tab) {
+            if ($tab && !$other.is(':checked')) {
               $tab.tabHide().updateSummary();
             }
           }
           // Re-stripe the table after toggling visibility of table row.
-          Drupal.tableDrag['edit-order'].restripeTable();
+          Drupal.tableDrag['edit-' + $stage.replace('_', '-') + '-order'].restripeTable();
         });
 
         // Attach summary for configurable items (only for screen-readers).
@@ -52,6 +73,7 @@
         }
 
         // Trigger our bound click handler to update elements to initial state.
+
         $checkbox.triggerHandler('click.searchApiUpdate');
       });
     }

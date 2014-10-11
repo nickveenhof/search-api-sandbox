@@ -18,7 +18,10 @@ use Drupal\search_api\Processor\ProcessorPluginBase;
  * @SearchApiProcessor(
  *   id = "language",
  *   label = @Translation("Language"),
- *   description = @Translation("Adds the item language to indexed items.")
+ *   description = @Translation("Adds the item language to indexed items."),
+ *   stages = {
+ *     "preprocess_index" = 0
+ *   }
  * )
  */
 class Language extends ProcessorPluginBase {

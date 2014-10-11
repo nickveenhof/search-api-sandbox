@@ -25,6 +25,21 @@ use Drupal\search_api\Query\ResultSetInterface;
 interface ProcessorInterface extends IndexPluginInterface {
 
   /**
+   * Process stage: preprocess.
+   */
+  const PROCESSOR_STAGE_PREPROCESS_INDEX = 'preprocess_index';
+
+  /**
+   * Process stage: preprocess.
+   */
+  const PROCESSOR_STAGE_PREPROCESS_QUERY = 'preprocess_query';
+
+  /**
+   * Process stage: postprocess.
+   */
+  const PROCESSOR_STAGE_POSTPROCESS = 'postprocess';
+
+  /**
    * Checks whether this processor is applicable for a certain index.
    *
    * This can be used for hiding the processor on the index's "Filters" tab. To
@@ -41,6 +56,36 @@ interface ProcessorInterface extends IndexPluginInterface {
    *   TRUE if the processor can run on the given index; FALSE otherwise.
    */
   public static function supportsIndex(IndexInterface $index);
+
+  /**
+   * Checks whether this processor implements a particular stage.
+   *
+   * @param string $stage_identifier
+   *   The stage to check: self::PROCESSOR_STAGE_PREPROCESS_INDEX,
+   *   self::PROCESSOR_STAGE_PREPROCESS_QUERY
+   *   or self::PROCESSOR_STAGE_POSTPROCESS.
+   *
+   * @return bool
+   *   TRUE if the processor runs on a particular stage; FALSE otherwise.
+   */
+  public function supportsStage($stage_identifier);
+
+  /**
+   * Returns the default weight for a particular stage.
+   *
+   * Some processors should ensure they run earlier or later in a particular
+   * stage. Lighter weights are run earlier. The default value is used when
+   * the processor is enabled. It can then be changed.
+   *
+   * @param string $stage_identifier
+   *   The stage: self::PROCESSOR_STAGE_PREPROCESS_INDEX,
+   *   self::PROCESSOR_STAGE_PREPROCESS_QUERY
+   *   or self::PROCESSOR_STAGE_POSTPROCESS.
+   *
+   * @return int
+   *   Default weight for that stage.
+   */
+  public function defaultWeight($stage_identifier);
 
   /**
    * Alters the given datasource's property definitions.

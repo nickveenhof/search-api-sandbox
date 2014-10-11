@@ -9,6 +9,7 @@ namespace Drupal\search_api\Tests\Processor;
 
 use Drupal\comment\Entity\CommentType;
 use Drupal\search_api\Index\IndexInterface;
+use Drupal\search_api\Processor\ProcessorInterface;
 use Drupal\search_api\Query\Query;
 
 /**
@@ -41,7 +42,7 @@ class ContentAccessTest extends ProcessorTestBase {
    * Creates a new processor object for use in the tests.
    */
   public function setUp() {
-    parent::setUp('content_access');
+    parent::setUp('content_access', array(ProcessorInterface::PROCESSOR_STAGE_PREPROCESS_INDEX, ProcessorInterface::PROCESSOR_STAGE_PREPROCESS_QUERY));
 
     $this->installSchema('comment', array('comment_entity_statistics'));
 
