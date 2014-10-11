@@ -29,7 +29,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @SearchApiProcessor(
  *   id = "content_access",
  *   label = @Translation("Content access"),
- *   description = @Translation("Adds content access checks for nodes and comments.")
+ *   description = @Translation("Adds content access checks for nodes and comments."),
+ *   stages = {
+ *     "preprocess_index" = 0,
+ *     "preprocess_query" = 0
+ *   }
  * )
  */
 class ContentAccess extends ProcessorPluginBase {

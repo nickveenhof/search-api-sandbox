@@ -43,7 +43,7 @@ abstract class ProcessorTestBase extends EntityUnitTestBase {
   /**
    * Creates a new processor object for use in the tests.
    */
-  public function setUp($processor = NULL) {
+  public function setUp($processor = NULL, $stages = array()) {
     parent::setUp();
 
     $this->installEntitySchema('node');
@@ -92,12 +92,16 @@ abstract class ProcessorTestBase extends EntityUnitTestBase {
       ),
     ));
     if ($processor) {
-      $this->index->setOption('processors', array(
-        $processor => array(
-          'status' => TRUE,
-          'weight' => 0,
-        ),
-      ));
+      foreach ($stages as $stage) {
+        $this->index->setOption('processors', array(
+          $processor => array(
+            $stage => array(
+              'status' => TRUE,
+              'weight' => 0,
+            ),
+          )
+        ));
+      }
     }
     $this->index->save();
 

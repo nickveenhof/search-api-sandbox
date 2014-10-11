@@ -7,6 +7,7 @@
 namespace Drupal\search_api\Tests\Processor;
 
 use Drupal\Core\TypedData\DataDefinition;
+use Drupal\search_api\Processor\ProcessorInterface;
 
 /**
  * Tests the "Rendered item" processor.
@@ -42,7 +43,7 @@ class RenderedItemTest extends ProcessorTestBase {
    * Setup a minimalistic environment including a an RenderedItem Processor.
    */
   public function setUp() {
-    parent::setUp('rendered_item');
+    parent::setUp('rendered_item', array(ProcessorInterface::PROCESSOR_STAGE_PREPROCESS_INDEX));
 
     // Load configuration and needed schemas.
     $this->installConfig(array('system', 'filter', 'node', 'comment'));

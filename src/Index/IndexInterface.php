@@ -249,16 +249,16 @@ interface IndexInterface extends ConfigEntityInterface {
   /**
    * Loads all enabled processors for this index in proper order.
    *
+   * @param string $stage
+   *   Value from \Drupal\search_api\Processor\ProcessorPluginBase::$stage
    * @param bool $all
    *   Also include non-active processors
-   * @param string $sortBy
    *
    * @return \Drupal\search_api\Processor\ProcessorInterface[]
    *   An array of all enabled (or available, if $all is TRUE) processors for
    *   this index.
    */
-  // @todo Remove $sortBy.
-  public function getProcessors($all = FALSE, $sortBy = 'weight');
+  public function getProcessors($stage = NULL, $all = FALSE);
 
   /**
    * Preprocesses data items for indexing.
