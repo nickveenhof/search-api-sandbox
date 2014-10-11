@@ -14,7 +14,11 @@ use Drupal\search_api\Processor\FieldsProcessorPluginBase;
  * @SearchApiProcessor(
  *   id = "ignore_character",
  *   label = @Translation("Ignore characters"),
- *   description = @Translation("Configure types of characters which should be ignored for searches.")
+ *   description = @Translation("Configure types of characters which should be ignored for searches."),
+ *   stages = {
+ *     "preprocess_index" = 0,
+ *     "preprocess_query" = 0
+ *   }
  * )
  */
 class IgnoreCharacter extends FieldsProcessorPluginBase {

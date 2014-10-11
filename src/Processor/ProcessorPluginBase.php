@@ -36,11 +36,40 @@ use Drupal\search_api\Query\ResultSetInterface;
  */
 abstract class ProcessorPluginBase extends IndexPluginBase implements ProcessorInterface {
 
+  // @todo translate labels here?
+  public static $stages = array(
+    ProcessorInterface::PROCESSOR_STAGE_PREPROCESS_INDEX => array(
+      'label' => 'Preprocess index',
+    ),
+    ProcessorInterface::PROCESSOR_STAGE_PREPROCESS_QUERY => array(
+      'label' => 'Preprocess query',
+    ),
+    ProcessorInterface::PROCESSOR_STAGE_POSTPROCESS => array(
+      'label' => 'Postprocess'
+    ),
+  );
+
   /**
    * {@inheritdoc}
    */
   public static function supportsIndex(IndexInterface $index) {
     return TRUE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function supportsStage($stage_identifier) {
+    $plugin_definition = $this->getPluginDefinition();
+    return isset($plugin_definition['stages'][$stage_identifier]);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function defaultWeight($stage) {
+    $plugin_definition = $this->getPluginDefinition();
+    return $plugin_definition['stages'][$stage];
   }
 
   /**
