@@ -113,9 +113,13 @@ class IndexFiltersForm extends EntityForm {
       );
     }
 
+    $form['weight'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Processor order'),
+    );
     // Order enabled processors per stage.
     foreach (ProcessorPluginBase::$stages as $stage => $description) {
-      $form[$stage] = array (
+      $form['weight'][$stage] = array (
         '#type' => 'fieldset',
         '#title' => $description['label'],
         '#attributes' => array('class' => array(
@@ -123,10 +127,10 @@ class IndexFiltersForm extends EntityForm {
           'search-api-stage-wrapper-' . $stage
         )),
       );
-      $form[$stage]['order'] = array(
+      $form['weight'][$stage]['order'] = array(
         '#type' => 'table',
       );
-      $form[$stage]['order']['#tabledrag'][] = array(
+      $form['weight'][$stage]['order']['#tabledrag'][] = array(
         'action' => 'order',
         'relationship' => 'sibling',
         'group' => 'search-api-processor-weight-' . $stage,
@@ -134,11 +138,11 @@ class IndexFiltersForm extends EntityForm {
     }
     foreach ($processors as $stage => $stage_processors) {
       foreach ($stage_processors as $name => $processor) {
-        $form[$stage]['order'][$name]['#attributes']['class'][] = 'draggable';
-        $form[$stage]['order'][$name]['label'] = array(
+        $form['weight'][$stage]['order'][$name]['#attributes']['class'][] = 'draggable';
+        $form['weight'][$stage]['order'][$name]['label'] = array(
           '#markup' => String::checkPlain($processor->label()),
         );
-        $form[$stage]['order'][$name]['weight'] = array(
+        $form['weight'][$stage]['order'][$name]['weight'] = array(
           '#type' => 'weight',
           '#title' => $this->t('Weight for processor %title', array('%title' => $processor->label())),
           '#title_display' => 'invisible',
