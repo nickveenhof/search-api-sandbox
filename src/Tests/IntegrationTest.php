@@ -592,7 +592,7 @@ class IntegrationTest extends SearchApiWebTestBase {
     $this->drupalPostForm($settings_path, $edit, $this->t('Save'));
     /** @var \Drupal\search_api\Index\IndexInterface $index */
     $index = entity_load('search_api_index', $this->indexId, TRUE);
-    $processors = $index->getProcessors('preprocess_index');
+    $processors = $index->getProcessorsByStage('preprocess_index');
     $this->assertTrue(isset($processors['ignorecase']), 'Ignore case index processor enabled');
   }
 
@@ -610,7 +610,7 @@ class IntegrationTest extends SearchApiWebTestBase {
     $this->drupalPostForm($settings_path, $edit, $this->t('Save'));
     /** @var \Drupal\search_api\Index\IndexInterface $index */
     $index = entity_load('search_api_index', $this->indexId, TRUE);
-    $processors = $index->getProcessors('preprocess_index');
+    $processors = $index->getProcessorsByStage('preprocess_index');
     if (isset($processors['ignorecase'])) {
       $configuration = $processors['ignorecase']->getConfiguration();
       $this->assertTrue(empty($configuration['fields']['search_api_language']), 'Language field disabled for ignore case filter.');
