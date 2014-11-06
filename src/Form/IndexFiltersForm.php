@@ -77,9 +77,9 @@ class IndexFiltersForm extends EntityForm {
    */
   public function form(array $form, FormStateInterface $form_state) {
     // Retreieve lists of all plugins, and the stages and weights they have.
-    $all_processors = $this->entity->getProcessors(NULL, TRUE);
+    $all_processors = $this->entity->getProcessors(TRUE);
     foreach (ProcessorPluginBase::$stages as $stage => $definition) {
-      $processors[$stage] = $this->entity->getProcessors($stage, TRUE);
+      $processors[$stage] = $this->entity->getProcessorsByStage($stage, TRUE);
     }
 
     if (!$form_state->has('processors')) {
