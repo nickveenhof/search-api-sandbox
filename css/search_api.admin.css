@@ -68,7 +68,13 @@
  * Processors page
  */
 .search-api-stage-wrapper {
-  width: 30%
+  width: 33%;
+}
+
+.search-api-stage-wrapper-preprocess_query {
+}
+
+.search-api-stage-wrapper-postprocess {
 }
 
 /*

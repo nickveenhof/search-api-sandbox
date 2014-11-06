@@ -148,7 +148,7 @@ class IndexFiltersForm extends EntityForm {
           '#parents' => array('processors', $name, $stage, 'weight'),
           '#attributes' => array('class' => array(
             'search-api-processor-weight-' . $stage,
-            'search-api-processor-weight-' . $stage . '-' . $name,
+            'search-api-processor-weight-' . $name,
           )),
         );
       }
