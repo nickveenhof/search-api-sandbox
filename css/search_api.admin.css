@@ -65,6 +65,13 @@
 }
 
 /*
+ * Processors page
+ */
+.search-api-stage-wrapper {
+  width: 30%
+}
+
+/*
  * Miscellaneous
  */
 .search-api-checkboxes-list div {

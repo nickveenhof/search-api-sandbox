@@ -92,6 +92,28 @@ class IndexFiltersForm extends EntityForm {
     $form['#title'] = $this->t('Manage filters for search index %label', array('%label' => $this->entity->label()));
     $form['#prefix'] = '<p>' . $this->t('Configure processors which will pre- and post-process data at index and search time.') . '</p>';
 
+    // Enable/disable checkboxes.
+    $form['status'] = array(
+      '#type' => 'fieldset',
+      '#title' => $this->t('Enabled'),
+      '#attributes' => array('class' => array(
+        'search-api-status-wrapper',
+      )),
+    );
+    foreach ($all_processors as $name => $processor) {
+      $form['status'][$name] = array(
+        '#type' => 'checkbox',
+        '#title' => $processor->label(),
+        '#default_value' => isset($processors_settings[$name]['status']) ? $processors_settings[$name]['status'] : 0,
+        '#parents' => array('processors', $name, 'status'),
+        '#description' => $processor->getPluginDefinition()['description'],
+        '#attributes' => array('class' => array(
+          'search-api-processor-status-' . $name,
+        )),
+      );
+    }
+
+    // Order enabled processors per stage.
     foreach (ProcessorPluginBase::$stages as $stage => $description) {
       $form[$stage] = array (
         '#type' => 'fieldset',
@@ -99,14 +121,6 @@ class IndexFiltersForm extends EntityForm {
         '#attributes' => array('class' => array(
           'search-api-stage-wrapper',
           'search-api-stage-wrapper-' . $stage
-        )),
-      );
-      $form[$stage]['status'] = array(
-        '#type' => 'fieldset',
-        '#title' => $this->t('Enabled'),
-        '#attributes' => array('class' => array(
-          'search-api-status-wrapper',
-          'search-api-status-wrapper-' . $stage
         )),
       );
       $form[$stage]['order'] = array(
@@ -118,7 +132,6 @@ class IndexFiltersForm extends EntityForm {
         'group' => 'search-api-processor-weight-' . $stage,
       );
     }
-
     foreach ($processors as $stage => $stage_processors) {
       foreach ($stage_processors as $name => $processor) {
         $form[$stage]['order'][$name]['#attributes']['class'][] = 'draggable';
@@ -139,26 +152,11 @@ class IndexFiltersForm extends EntityForm {
           )),
         );
       }
-      ksort($stage_processors);
-      foreach ($stage_processors as $name => $processor) {
-        $form[$stage]['status'][$name] = array(
-          '#type' => 'checkbox',
-          '#title' => $processor->label(),
-          '#default_value' => isset($processors_settings[$name][$stage]['status']) ? $processors_settings[$name][$stage]['status'] : 0,
-          '#parents' => array('processors', $name, $stage, 'status'),
-          '#description' => $processor->getPluginDefinition()['description'],
-          '#attributes' => array('class' => array(
-            'search-api-processor-status-' . $name,
-            'search-api-processor-status-' . $name . '-' . $stage,
-          )),
-        );
-      }
     }
 
     // Add vertical tabs containing the settings for the processors. Tabs for
     // disabled processors are hidden with JS magic, but need to be included in
     // case the processor is enabled.
-
     $form['processor_settings'] = array(
       '#title' => $this->t('Processor settings'),
       '#type' => 'vertical_tabs',
