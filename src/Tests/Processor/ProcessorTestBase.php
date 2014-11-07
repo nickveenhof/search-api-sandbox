@@ -7,7 +7,6 @@
 
 namespace Drupal\search_api\Tests\Processor;
 
-use Drupal\search_api\Index\IndexInterface;
 use Drupal\search_api\Utility\Utility;
 use Drupal\system\Tests\Entity\EntityUnitTestBase;
 
@@ -19,31 +18,42 @@ abstract class ProcessorTestBase extends EntityUnitTestBase {
   /**
    * Modules to enable for this test.
    *
-   * @var array
+   * @var string[]
    */
   public static $modules = array('user', 'node', 'search_api','search_api_db', 'search_api_test_backend', 'comment', 'entity_reference');
 
   /**
-   * The processor used for these tests.
+   * The processor used for this test.
    *
    * @var \Drupal\search_api\Processor\ProcessorInterface
    */
   protected $processor;
 
   /**
-   * @var \Drupal\search_api\Entity\Index
+   * The search index used for this test.
+   *
+   * @var \Drupal\search_api\Index\IndexInterface
    */
   protected $index;
 
   /**
-   * @var \Drupal\search_api\Entity\Server
+   * The search server used for this test.
+   *
+   * @var \Drupal\search_api\Server\ServerInterface
    */
   protected $server;
 
   /**
-   * Creates a new processor object for use in the tests.
+   * Performs setup tasks before each individual test method is run.
+   *
+   * Installs commonly used schemas and sets up a search server and an index,
+   * with the specified processor enabled.
+   *
+   * @param string|null $processor
+   *   (optional) The plugin ID of the processor that should be set up for
+   *   testing.
    */
-  public function setUp($processor = NULL, $stages = array()) {
+  public function setUp($processor = NULL) {
     parent::setUp();
 
     $this->installEntitySchema('node');
@@ -92,42 +102,40 @@ abstract class ProcessorTestBase extends EntityUnitTestBase {
       ),
     ));
     if ($processor) {
-      foreach ($stages as $stage) {
-        $this->index->setOption('processors', array(
-          $processor => array(
-            $stage => array(
-              'status' => TRUE,
-              'weight' => 0,
-            ),
-          )
-        ));
-      }
+      $this->index->setOption('processors', array(
+        $processor => array(
+          'status' => TRUE,
+          'weight' => 0,
+        ),
+      ));
+
+      /** @var \Drupal\search_api\Processor\ProcessorPluginManager $plugin_manager */
+      $plugin_manager = \Drupal::service('plugin.manager.search_api.processor');
+      $this->processor = $plugin_manager->createInstance($processor, array('index' => $this->index));
     }
     $this->index->save();
-
-    /** @var \Drupal\search_api\Processor\ProcessorPluginManager $plugin_manager */
-    $plugin_manager = \Drupal::service('plugin.manager.search_api.processor');
-    $this->processor = $plugin_manager->createInstance($processor, array('index' => $this->index));
   }
 
   /**
-   * Populates testing items.
+   * Generates some test items.
    *
-   * @param array $items
-   *   Data to populate test items.
-   *   - datasource: The datasource plugin id.
+   * @param array[] $items
+   *   Array of items to be transformed into proper search item objects. Each
+   *   item in this array is an associative array with the following keys:
+   *   - datasource: The datasource plugin ID.
    *   - item: The item object to be indexed.
-   *   - item_id: Datasource-specific raw item id.
-   *   - text: Textual value of the test field.
+   *   - item_id: The datasource-specific raw item ID.
+   *   - *: Any other keys will be treated as property paths, and their values
+   *     as a single value for a field with that property path.
    *
    * @return \Drupal\search_api\Item\ItemInterface[]
-   *   The populated test items.
+   *   The generated test items.
    */
   public function generateItems(array $items) {
     /** @var \Drupal\search_api\Item\ItemInterface[] $extracted_items */
     $extracted_items = array();
     foreach ($items as $item) {
-      $id = $item['datasource'] . IndexInterface::DATASOURCE_ID_SEPARATOR . $item['item_id'];
+      $id = Utility::createCombinedId($item['datasource'], $item['item_id']);
       $extracted_items[$id] = Utility::createItemFromObject($this->index, $item['item'], $id);
       foreach (array(NULL, $item['datasource']) as $datasource_id) {
         foreach ($this->index->getFieldsByDatasource($datasource_id) as $key => $field) {
