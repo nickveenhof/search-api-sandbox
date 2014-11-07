@@ -69,6 +69,7 @@
  */
 .search-api-stage-wrapper.form-item {
   width: 30%;
+  min-width: 16em;
   float: left;
   margin-right: 1%;
 }

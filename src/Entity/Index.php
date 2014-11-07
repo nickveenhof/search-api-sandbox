@@ -19,7 +19,6 @@ use Drupal\search_api\Exception\SearchApiException;
 use Drupal\search_api\Index\IndexInterface;
 use Drupal\search_api\Item\GenericFieldInterface;
 use Drupal\search_api\Processor\ProcessorInterface;
-use Drupal\search_api\Processor\ProcessorPluginBase;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api\Query\ResultSetInterface;
 use Drupal\search_api\Server\ServerInterface;
@@ -229,7 +228,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    *
    * @var \Drupal\search_api\Processor\ProcessorInterface[]|null
    *
-   * @see getProcessors()
+   * @see loadProcessors()
    */
   protected $processors;
 
@@ -442,7 +441,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
   /**
    * {@inheritdoc}
    */
-  public function getProcessorsByStage($requested_stage, $all = TRUE) {
+  public function getProcessorsByStage($stage, $all = TRUE) {
     // Processor settings for status and weight.
     $processors_settings = $this->getOption('processors', array());
 
@@ -451,16 +450,16 @@ class Index extends ConfigEntityBase implements IndexInterface {
 
     $processors_weight = array();
 
-    // Get list processors meeting stage & enabled critera, with their weight.
+    // Get list processors meeting stage & enabled criteria, with their weight.
     foreach ($this->processors as $name => $processor) {
-      if ($processor->supportsStage($requested_stage) && ($all || $processors_settings[$name]['status'])) {
-        if (empty($processors_settings[$name][$requested_stage]['weight'])) {
+      if ($processor->supportsStage($stage) && ($all || $processors_settings[$name]['status'])) {
+        if (empty($processors_settings[$name][$stage]['weight'])) {
           // defaults if none set yet.
-          $processors_weight[$name]['weight'] = $this->processors[$name]->defaultweight($requested_stage);
+          $processors_weight[$name]['weight'] = $this->processors[$name]->defaultweight($stage);
         }
         else {
           // requested stage values.
-          $processors_weight[$name]['weight'] = $processors_settings[$name][$requested_stage]['weight'];
+          $processors_weight[$name]['weight'] = $processors_settings[$name][$stage]['weight'];
         }
       }
     }
@@ -499,16 +498,16 @@ class Index extends ConfigEntityBase implements IndexInterface {
       }
     }
 
-    // Sort alphabetically.
-    ksort($return_processors);
-
     return $return_processors;
   }
 
   /**
-   * Load all processors supported by this index into $this->processors[].
+   * Loads all processors supported by this index into $this->processors[].
+   *
+   * @todo Only use $this->processors as a cache for this method and return the
+   *   loaded processors.
    */
-  private function loadProcessors() {
+  protected function loadProcessors() {
     /** @var $processorPluginManager \Drupal\search_api\Processor\ProcessorPluginManager */
     $processorPluginManager = \Drupal::service('plugin.manager.search_api.processor');
     // Processor settings used internally for stage status and weight.
@@ -537,7 +536,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    * {@inheritdoc}
    */
   public function preprocessIndexItems(array &$items) {
-    foreach ($this->getProcessorsByStage(ProcessorInterface::PROCESSOR_STAGE_PREPROCESS_INDEX) as $processor) {
+    foreach ($this->getProcessorsByStage(ProcessorInterface::STAGE_PREPROCESS_INDEX) as $processor) {
       $processor->preprocessIndexItems($items);
     }
   }
@@ -546,7 +545,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    * {@inheritdoc}
    */
   public function preprocessSearchQuery(QueryInterface $query) {
-    foreach ($this->getProcessorsByStage(ProcessorInterface::PROCESSOR_STAGE_PREPROCESS_QUERY) as $processor) {
+    foreach ($this->getProcessorsByStage(ProcessorInterface::STAGE_PREPROCESS_QUERY) as $processor) {
       $processor->preprocessSearchQuery($query);
     }
   }
@@ -556,7 +555,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    */
   public function postprocessSearchResults(ResultSetInterface $results) {
     /** @var $processor \Drupal\search_api\Processor\ProcessorInterface */
-    foreach (array_reverse($this->getProcessorsByStage(ProcessorInterface::PROCESSOR_STAGE_POSTPROCESS)) as $processor) {
+    foreach (array_reverse($this->getProcessorsByStage(ProcessorInterface::STAGE_POSTPROCESS)) as $processor) {
       $processor->postprocessSearchResults($results);
     }
   }

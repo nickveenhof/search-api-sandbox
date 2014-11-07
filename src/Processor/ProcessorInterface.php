@@ -27,17 +27,17 @@ interface ProcessorInterface extends IndexPluginInterface {
   /**
    * Process stage: preprocess.
    */
-  const PROCESSOR_STAGE_PREPROCESS_INDEX = 'preprocess_index';
+  const STAGE_PREPROCESS_INDEX = 'preprocess_index';
 
   /**
    * Process stage: preprocess.
    */
-  const PROCESSOR_STAGE_PREPROCESS_QUERY = 'preprocess_query';
+  const STAGE_PREPROCESS_QUERY = 'preprocess_query';
 
   /**
    * Process stage: postprocess.
    */
-  const PROCESSOR_STAGE_POSTPROCESS = 'postprocess';
+  const STAGE_POSTPROCESS = 'postprocess';
 
   /**
    * Checks whether this processor is applicable for a certain index.
@@ -61,9 +61,9 @@ interface ProcessorInterface extends IndexPluginInterface {
    * Checks whether this processor implements a particular stage.
    *
    * @param string $stage_identifier
-   *   The stage to check: self::PROCESSOR_STAGE_PREPROCESS_INDEX,
-   *   self::PROCESSOR_STAGE_PREPROCESS_QUERY
-   *   or self::PROCESSOR_STAGE_POSTPROCESS.
+   *   The stage to check: self::STAGE_PREPROCESS_INDEX,
+   *   self::STAGE_PREPROCESS_QUERY
+   *   or self::STAGE_POSTPROCESS.
    *
    * @return bool
    *   TRUE if the processor runs on a particular stage; FALSE otherwise.
@@ -77,15 +77,14 @@ interface ProcessorInterface extends IndexPluginInterface {
    * stage. Lighter weights are run earlier. The default value is used when
    * the processor is enabled. It can then be changed.
    *
-   * @param string $stage_identifier
-   *   The stage: self::PROCESSOR_STAGE_PREPROCESS_INDEX,
-   *   self::PROCESSOR_STAGE_PREPROCESS_QUERY
-   *   or self::PROCESSOR_STAGE_POSTPROCESS.
+   * @param string $stage
+   *   The stage whose default weight should be returned. One of the
+   *   ProcessorInterface::STAGE_* constants.
    *
    * @return int
    *   Default weight for that stage.
    */
-  public function defaultWeight($stage_identifier);
+  public function defaultWeight($stage);
 
   /**
    * Alters the given datasource's property definitions.

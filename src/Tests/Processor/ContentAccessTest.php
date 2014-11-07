@@ -12,7 +12,6 @@ use Drupal\comment\Entity\CommentType;
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
 use Drupal\search_api\Index\IndexInterface;
-use Drupal\search_api\Processor\ProcessorInterface;
 use Drupal\search_api\Utility\Utility;
 use Drupal\user\Entity\Role;
 use Drupal\user\Entity\User;
@@ -51,7 +50,7 @@ class ContentAccessTest extends ProcessorTestBase {
    * Performs setup tasks before each individual test method is run.
    */
   public function setUp() {
-    parent::setUp('content_access', array(ProcessorInterface::PROCESSOR_STAGE_PREPROCESS_INDEX, ProcessorInterface::PROCESSOR_STAGE_PREPROCESS_QUERY));
+    parent::setUp('content_access');
 
     // The parent method already installs most needed node and comment schemas,
     // but here we also need the comment statistics.

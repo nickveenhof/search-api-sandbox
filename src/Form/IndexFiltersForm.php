@@ -76,10 +76,12 @@ class IndexFiltersForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-    // Retreieve lists of all plugins, and the stages and weights they have.
+    // Retrieve lists of all processors, and the stages and weights they have.
     $all_processors = $this->entity->getProcessors(TRUE);
+    ksort($all_processors);
+    $processors_by_stage = array();
     foreach (ProcessorPluginBase::$stages as $stage => $definition) {
-      $processors[$stage] = $this->entity->getProcessorsByStage($stage, TRUE);
+      $processors_by_stage[$stage] = $this->entity->getProcessorsByStage($stage, TRUE);
     }
 
     if (!$form_state->has('processors')) {
@@ -92,7 +94,7 @@ class IndexFiltersForm extends EntityForm {
     $form['#title'] = $this->t('Manage filters for search index %label', array('%label' => $this->entity->label()));
     $form['#prefix'] = '<p>' . $this->t('Configure processors which will pre- and post-process data at index and search time.') . '</p>';
 
-    // Enable/disable checkboxes.
+    // Add the list of processors with checkboxes to enable/disable them.
     $form['status'] = array(
       '#type' => 'fieldset',
       '#title' => $this->t('Enabled'),
@@ -136,8 +138,9 @@ class IndexFiltersForm extends EntityForm {
         'group' => 'search-api-processor-weight-' . $stage,
       );
     }
-    foreach ($processors as $stage => $stage_processors) {
-      foreach ($stage_processors as $name => $processor) {
+    foreach ($processors_by_stage as $stage => $processors) {
+      /** @var \Drupal\search_api\Processor\ProcessorInterface $processor */
+      foreach ($processors as $name => $processor) {
         $form['weight'][$stage]['order'][$name]['#attributes']['class'][] = 'draggable';
         $form['weight'][$stage]['order'][$name]['label'] = array(
           '#markup' => String::checkPlain($processor->label()),
@@ -193,13 +196,7 @@ class IndexFiltersForm extends EntityForm {
     /** @var $processor \Drupal\search_api\Processor\ProcessorInterface */
     foreach ($form_state->get('processors') as $name => $processor) {
       if (isset($values['processors'][$name]['settings'])) {
-        $enabled = FALSE;
-        foreach(ProcessorPluginBase::$stages as $stage => $definition) {
-          if (!empty($values['processors'][$name][$stage]['status'])) {
-            $enabled = TRUE;
-          }
-        }
-        if ($enabled) {
+        if (!empty($values['processors'][$name]['status'])) {
           $processor_form_state = new SubFormState($form_state, array('processors', $name, 'settings'));
           $processor->validateConfigurationForm($form['settings'][$name], $processor_form_state);
         }
