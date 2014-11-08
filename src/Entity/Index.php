@@ -441,7 +441,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
   /**
    * {@inheritdoc}
    */
-  public function getProcessorsByStage($stage, $all = TRUE) {
+  public function getProcessorsByStage($stage, $all = FALSE) {
     // Processor settings for status and weight.
     $processors_settings = $this->getOption('processors', array());
 
@@ -452,7 +452,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
 
     // Get list processors meeting stage & enabled criteria, with their weight.
     foreach ($this->processors as $name => $processor) {
-      if ($processor->supportsStage($stage) && ($all || $processors_settings[$name]['status'])) {
+      if ($processor->supportsStage($stage) && ($all || !empty($processors_settings[$name]['status']))) {
         if (empty($processors_settings[$name][$stage]['weight'])) {
           // defaults if none set yet.
           $processors_weight[$name]['weight'] = $this->processors[$name]->defaultweight($stage);
@@ -477,7 +477,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
   /**
    * {@inheritdoc}
    */
-  public function getProcessors($all = TRUE) {
+  public function getProcessors($all = FALSE) {
     // Processor settings for status.
     $processors_settings = $this->getOption('processors', array());
 
