@@ -9,6 +9,7 @@ namespace Drupal\search_api\Plugin\SearchApi\Processor;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Drupal\search_api\Processor\FieldsProcessorPluginBase;
 use Drupal\search_api\Utility\Utility;
 use Symfony\Component\Yaml\Dumper;
@@ -72,7 +73,7 @@ class HtmlFilter extends FieldsProcessorPluginBase {
     $tags = str_replace('\r\n', "\n", $tags);
     $tags = str_replace('"', '', $tags);
 
-    $t_args['@url'] = _url('https://en.wikipedia.org/wiki/YAML');
+    $t_args['@url'] = Url::fromUri('https://en.wikipedia.org/wiki/YAML')->toString();
     $form['tags'] = array(
       '#type' => 'textarea',
       '#title' => $this->t('Tag boosts'),
@@ -98,6 +99,10 @@ class HtmlFilter extends FieldsProcessorPluginBase {
     try {
       $parser = new Parser();
       $tags = $parser->parse($tags);
+      if (!is_array($tags)) {
+        $errors[] = $this->t('Tags is not a valid YAML map. See @link for information on how to write correctly formed YAML.', array('@link' => 'http://yaml.org'));
+        $tags = array();
+      }
     }
     catch (ParseException $exception) {
       $errors[] = $this->t('Tags is not valid YAML. See @link for information on how to write correctly formed YAML.', array('@link' => 'http://yaml.org'));
