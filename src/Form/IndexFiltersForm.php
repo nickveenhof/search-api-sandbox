@@ -92,40 +92,12 @@ class IndexFiltersForm extends EntityForm {
     $form['#tree'] = TRUE;
     $form['#attached']['library'][] = 'search_api/drupal.search_api.index-active-formatters';
     $form['#title'] = $this->t('Manage filters for search index %label', array('%label' => $this->entity->label()));
-    $description = "
-      Filters are modifications to the indexed text during different phases of the search system. </br>
-      It is important to understand these different phases before enabling any of the following filters.</br>
-      We seperate this processing in the following 3 phases.</br>
-      <ol>
-      <li><strong>Pre-processing Content</strong></br>
-        Text that is stored in Drupal is not necessarily ready to be stored as-is
-        in a Search Index. Sometimes you want to remove html tags from words or remove words before sending this to the index.
-        This phase is the ideal place to do this. Use the \"HTML Filter\" filter or the \"Stopwords\" filter for the examples given.
-      </li>
-      <li><strong>Pre-processing Queries</strong></br>
-        Search terms that are entered by users often contain useless characters that are not suitable in a search.
-        Similar to Pre-processing content, you sometimes want to clean up these values before sending it to a Search Index.
-        Examples are the \"Transliteration\" filter to remove accents from letters or the \"Ignore Case\" to make sure you
-        will match anything.
-      </li>
-      <li><strong>Post-processing Results</strong></br>
-        Search results are often only great when the excerpts match what users are searching for. That is the reason why
-        Search API let's you modify how these excerpts look like. Adding a \"Highlight\" filter to your Search Results often results
-        in higher conversion.
-      </li>
-      </ol>
-      </br>
-      Please note that some backends, such as Apache Solr and Elastic Search, already do many of this filtering strategies for you.
-      It is advised you understand what the backend recommends or advises.
-    ";
-
-    $form['#prefix'] = '<p>' . $this->t($description) . '</p>';
+    $form['#prefix'] = '<p>' . $this->t('Configure processors which will pre- and post-process data at index and search time.') . '</p>';
 
     // Add the list of processors with checkboxes to enable/disable them.
     $form['status'] = array(
-      '#type' => 'details',
-      '#title' => $this->t('Enable Filters'),
-      '#open' => FALSE,
+      '#type' => 'fieldset',
+      '#title' => $this->t('Enabled'),
       '#attributes' => array('class' => array(
         'search-api-status-wrapper',
       )),
@@ -145,7 +117,7 @@ class IndexFiltersForm extends EntityForm {
 
     $form['weight'] = array(
       '#type' => 'fieldset',
-      '#title' => t('Filter order'),
+      '#title' => t('Processor order'),
     );
     // Order enabled processors per stage.
     foreach (ProcessorPluginBase::$stages as $stage => $description) {
