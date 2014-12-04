@@ -30,14 +30,14 @@ class LanguageIntegrationUnitTest extends EntityLanguageTestBase {
   /**
    * The search server used for testing.
    *
-   * @var \Drupal\search_api\Server\ServerInterface
+   * @var \Drupal\search_api\ServerInterface
    */
   protected $server;
 
   /**
    * The search index used for testing.
    *
-   * @var \Drupal\search_api\Index\IndexInterface
+   * @var \Drupal\search_api\IndexInterface
    */
   protected $index;
 
@@ -59,7 +59,7 @@ class LanguageIntegrationUnitTest extends EntityLanguageTestBase {
     // Create a test server.
     $this->server = Server::create(array(
       'name' => $this->randomString(),
-      'machine_name' => $this->randomMachineName(),
+      'id' => $this->randomMachineName(),
       'status' => 1,
       'backend' => 'search_api_test_backend',
     ));
@@ -68,10 +68,10 @@ class LanguageIntegrationUnitTest extends EntityLanguageTestBase {
     // Create a test index.
     $this->index = Index::create(array(
       'name' => $this->randomString(),
-      'machine_name' => $this->randomMachineName(),
+      'id' => $this->randomMachineName(),
       'status' => 1,
       'datasources' => array('entity:' . $this->testEntityTypeId),
-      'tracker' => 'default_tracker',
+      'tracker' => 'default',
       'server' => $this->server->id(),
       'options' => array('index_directly' => FALSE),
     ));
@@ -84,7 +84,6 @@ class LanguageIntegrationUnitTest extends EntityLanguageTestBase {
   public function testItemTranslations() {
     // Test retrieving language and translations when no translations are
     // available.
-    /** @var \Drupal\Core\Entity\ContentEntityInterface $entity_1 */
     $entity_1 = EntityTestMul::create(array(
       'id' => 1,
       'name' => 'test 1',
@@ -94,7 +93,6 @@ class LanguageIntegrationUnitTest extends EntityLanguageTestBase {
     $this->assertEqual($entity_1->language()->getId(), 'en', String::format('%entity_type: Entity language set to site default.', array('%entity_type' => $this->testEntityTypeId)));
     $this->assertFalse($entity_1->getTranslationLanguages(FALSE), String::format('%entity_type: No translations are available', array('%entity_type' => $this->testEntityTypeId)));
 
-    /** @var \Drupal\Core\Entity\ContentEntityInterface $entity_2 */
     $entity_2 = EntityTestMul::create(array(
       'id' => 2,
       'name' => 'test 2',
@@ -142,7 +140,6 @@ class LanguageIntegrationUnitTest extends EntityLanguageTestBase {
 
     // Set two translations for the first entity and test that the datasource
     // returns three separate item IDs, one for each translation.
-    /** @var \Drupal\Core\Entity\ContentEntityInterface $translation */
     $translation = $entity_1->getTranslation($this->langcodes[1]);
     $translation->save();
     $translation = $entity_1->getTranslation($this->langcodes[2]);

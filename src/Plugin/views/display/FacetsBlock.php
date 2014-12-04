@@ -10,7 +10,9 @@ namespace Drupal\search_api\Plugin\views\display;
 use Drupal\Component\Utility\String;
 use Drupal\Component\Utility\Xss;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\search_api\Exception\SearchApiException;
+use Drupal\Core\Url;
+use Drupal\search_api\Entity\Index;
+use Drupal\search_api\SearchApiException;
 use Drupal\search_api\Plugin\views\query\SearchApiQuery;
 use Drupal\views\Plugin\views\display\Block;
 use Drupal\views\Views;
@@ -175,15 +177,15 @@ class FacetsBlock extends Block {
    *   An associative array mapping all indexed fields' identifiers to their
    *   prefixed labels.
    *
-   * @throws \Drupal\search_api\Exception\SearchApiException
+   * @throws \Drupal\search_api\SearchApiException
    *   If there couldn't be a search index retrieved for the current view.
    */
   protected function getFieldOptions() {
     if (!isset($this->field_options)) {
       $index_id = $this->getSearchIndexId();
-      /** @var \Drupal\search_api\Index\IndexInterface $index */
+      /** @var \Drupal\search_api\IndexInterface $index */
       $index = NULL;
-      if (!($index_id && ($index = entity_load('search_api_index', $index_id)))) {
+      if (!($index_id && ($index = Index::load($index_id)))) {
         $table = $this->view->storage->get('base_table');
         $views_data = Views::viewsData($table);
         $table = empty($views_data['table']['base']['title']) ? $table : $views_data['table']['base']['title'];
@@ -211,7 +213,7 @@ class FacetsBlock extends Block {
           $url_options['query'] = $this->view->exposed_raw_input;
         }
         $theme = $this->view->buildThemeFunctions('views_more');
-        $path = check_url(_url($path, $url_options));
+        $path = check_url(Url::fromUri($path, $url_options)->toString());
 
         return array(
           '#theme' => $theme,
@@ -307,7 +309,7 @@ class FacetsBlock extends Block {
     $index = $query->getIndex();
     $options['field'] = $index->options['fields'][$facet_field];
     $options['field']['key'] = $facet_field;
-    $options['index id'] = $index->machine_name;
+    $options['index id'] = $index->id;
     $options['value callback'] = '_search_api_facetapi_facet_create_label';
     $map = search_api_facetapi_facet_map_callback($filters, $options);
 

@@ -20,11 +20,15 @@ class LocalTasksTest extends LocalTaskIntegrationTest {
    * {@inheritdoc}
    */
   public function setUp() {
+    parent::setUp();
     $this->directoryList = array('search_api' => 'modules/search_api');
   }
 
   /**
-   * Tests local task existence.
+   * Tests whether the server's local tasks are present at the given route.
+   *
+   * @param string $route
+   *   The route to test.
    *
    * @dataProvider getPageRoutesServer
    */
@@ -36,7 +40,24 @@ class LocalTasksTest extends LocalTaskIntegrationTest {
   }
 
   /**
-   * Tests local task existence.
+   * Provides a list of routes to test.
+   *
+   * @return array[]
+   *   An array containing arrays with the arguments for a
+   *   testLocalTasksServer() call.
+   */
+  public function getPageRoutesServer() {
+    return array(
+      array('entity.search_api_server.canonical'),
+      array('entity.search_api_server.edit_form'),
+    );
+  }
+
+  /**
+   * Tests whether the index's local tasks are present at the given route.
+   *
+   * @param string $route
+   *   The route to test.
    *
    * @dataProvider getPageRoutesIndex
    */
@@ -49,16 +70,10 @@ class LocalTasksTest extends LocalTaskIntegrationTest {
 
   /**
    * Provides a list of routes to test.
-   */
-  public function getPageRoutesServer() {
-    return array(
-      array('entity.search_api_server.canonical'),
-      array('entity.search_api_server.edit_form'),
-    );
-  }
-
-  /**
-   * Provides a list of routes to test.
+   *
+   * @return array[]
+   *   An array containing arrays with the arguments for a
+   *   testLocalTasksIndex() call.
    */
   public function getPageRoutesIndex() {
     return array(

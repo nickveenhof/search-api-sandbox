@@ -8,9 +8,10 @@
 namespace Drupal\search_api\Item;
 
 use Drupal\Component\Utility\String;
-use Drupal\search_api\Exception\SearchApiException;
-use Drupal\search_api\Index\IndexInterface;
-use Drupal\search_api\Utility\Utility;
+use Drupal\search_api\Entity\Index;
+use Drupal\search_api\SearchApiException;
+use Drupal\search_api\IndexInterface;
+use Drupal\search_api\Utility;
 
 /**
  * Provides a trait for classes wrapping a specific field on an index.
@@ -22,7 +23,7 @@ trait FieldTrait {
   /**
    * The index this field is attached to.
    *
-   * @var \Drupal\search_api\Index\IndexInterface
+   * @var \Drupal\search_api\IndexInterface
    */
   protected $index;
 
@@ -95,7 +96,7 @@ trait FieldTrait {
   /**
    * Constructs a FieldTrait object.
    *
-   * @param \Drupal\search_api\Index\IndexInterface $index
+   * @param \Drupal\search_api\IndexInterface $index
    *   The field's index.
    * @param string $field_identifier
    *   The field's combined identifier, with datasource prefix if applicable.
@@ -109,7 +110,7 @@ trait FieldTrait {
   /**
    * Returns the index of this field.
    *
-   * @return \Drupal\search_api\Index\IndexInterface
+   * @return \Drupal\search_api\IndexInterface
    *   The index to which this field belongs.
    *
    * @see \Drupal\search_api\Item\GenericFieldInterface::getIndex()
@@ -125,11 +126,10 @@ trait FieldTrait {
    * set to the same object that is returning them. The method shouldn't be used
    * in any other case.
    *
-   * @param \Drupal\search_api\Index\IndexInterface $index
+   * @param \Drupal\search_api\IndexInterface $index
    *   The index to which this field belongs.
    *
-   * @return self
-   *   The invoked object.
+   * @return $this
    *
    * @throws \InvalidArgumentException
    *   If the ID of the given index is not the same as the ID of the index that
@@ -177,7 +177,7 @@ trait FieldTrait {
    *   The datasource to which this field belongs. NULL if the field is
    *   datasource-independent.
    *
-   * @throws \Drupal\search_api\Exception\SearchApiException
+   * @throws \Drupal\search_api\SearchApiException
    *   If the field's datasource couldn't be loaded.
    *
    * @see \Drupal\search_api\Item\GenericFieldInterface::getDatasource()
@@ -227,7 +227,7 @@ trait FieldTrait {
       if ($pos) {
         $parent_id = substr($this->propertyPath, 0, $pos);
         if ($this->datasource_id) {
-          $parent_id = $this->datasource_id . IndexInterface::DATASOURCE_ID_SEPARATOR . $parent_id;
+          $parent_id = Utility::createCombinedId($this->datasource_id, $parent_id);
         }
         $label = Utility::createField($this->index, $parent_id)->getLabel() . ' » ' . $label;
       }
@@ -239,11 +239,10 @@ trait FieldTrait {
   /**
    * Sets this field's label.
    *
-   * @param $label
+   * @param string $label
    *   A human-readable label representing this field's property path.
    *
-   * @return self
-   *   The invoked object.
+   * @return $this
    *
    * @see \Drupal\search_api\Item\GenericFieldInterface::setLabel()
    */
@@ -280,8 +279,7 @@ trait FieldTrait {
    *   A human-readable description for this field, or NULL if the field has no
    *   description.
    *
-   * @return self
-   *   The invoked object.
+   * @return $this
    *
    * @see \Drupal\search_api\Item\GenericFieldInterface::setDescription()
    */
@@ -322,12 +320,11 @@ trait FieldTrait {
   /**
    * Sets this field's label prefix.
    *
-   * @param $label_prefix
+   * @param string $label_prefix
    *   A human-readable label representing this field's datasource and ending in
    *   some kind of visual separator.
    *
-   * @return self
-   *   The invoked object.
+   * @return $this
    *
    * @see \Drupal\search_api\Item\GenericFieldInterface::setLabelPrefix()
    */
@@ -342,7 +339,7 @@ trait FieldTrait {
    * @return \Drupal\Core\TypedData\DataDefinitionInterface
    *   The data definition object for this field.
    *
-   * @throws \Drupal\search_api\Exception\SearchApiException
+   * @throws \Drupal\search_api\SearchApiException
    *   If the field's data definition is unknown.
    *
    * @see \Drupal\search_api\Item\GenericFieldInterface::getDataDefinition()
@@ -389,7 +386,7 @@ trait FieldTrait {
    */
   public function __wakeup() {
     if ($this->index_id) {
-      $this->index = entity_load('search_api_index', $this->index_id);
+      $this->index = Index::load($this->index_id);
       unset($this->index_id);
     }
   }

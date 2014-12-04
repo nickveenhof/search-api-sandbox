@@ -12,7 +12,7 @@ use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\Core\TypedData\ComplexDataInterface;
-use Drupal\search_api\Exception\SearchApiException;
+use Drupal\search_api\SearchApiException;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\row\RowPluginBase;
 use Drupal\views\ViewExecutable;
@@ -27,13 +27,12 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   help = @Translation("Displays entity of the matching search API item"),
  * )
  */
-// @todo Hide for other, non-Search API base tables.
 class SearchApiRow extends RowPluginBase {
 
   /**
    * The search index.
    *
-   * @var \Drupal\search_api\Index\IndexInterface
+   * @var \Drupal\search_api\IndexInterface
    */
   protected $index;
 
@@ -56,7 +55,7 @@ class SearchApiRow extends RowPluginBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    /** @var \Drupal\search_api\Plugin\views\row\SearchApiRow $row */
+    /** @var static $row */
     $row = parent::create($container, $configuration, $plugin_id, $plugin_definition);
 
     /** @var \Drupal\Core\Entity\EntityManagerInterface $entity_manager */

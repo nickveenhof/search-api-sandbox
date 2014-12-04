@@ -7,7 +7,7 @@
 
 namespace Drupal\search_api\Item;
 
-use Drupal\search_api\Index\IndexInterface;
+use Drupal\search_api\IndexInterface;
 
 /**
  * Represents any field attached to an index.
@@ -17,7 +17,7 @@ interface GenericFieldInterface {
   /**
    * Returns the index of this field.
    *
-   * @return \Drupal\search_api\Index\IndexInterface
+   * @return \Drupal\search_api\IndexInterface
    *   The index to which this field belongs.
    */
   public function getIndex();
@@ -29,11 +29,10 @@ interface GenericFieldInterface {
    * set to the same object that is returning them. The method shouldn't be used
    * in any other case.
    *
-   * @param \Drupal\search_api\Index\IndexInterface $index
+   * @param \Drupal\search_api\IndexInterface $index
    *   The index to which this field belongs.
    *
-   * @return self
-   *   The invoked object.
+   * @return $this
    *
    * @throws \InvalidArgumentException
    *   If the ID of the given index is not the same as the ID of the index that
@@ -65,7 +64,7 @@ interface GenericFieldInterface {
    *   The datasource to which this field belongs. NULL if the field is
    *   datasource-independent.
    *
-   * @throws \Drupal\search_api\Exception\SearchApiException
+   * @throws \Drupal\search_api\SearchApiException
    *   If the field's datasource couldn't be loaded.
    */
   public function getDatasource();
@@ -94,11 +93,10 @@ interface GenericFieldInterface {
   /**
    * Sets this field's label.
    *
-   * @param $label
+   * @param string $label
    *   A human-readable label representing this field's property path.
    *
-   * @return self
-   *   The invoked object.
+   * @return $this
    */
   public function setLabel($label);
 
@@ -118,8 +116,7 @@ interface GenericFieldInterface {
    *   A human-readable description for this field, or NULL if the field has no
    *   description.
    *
-   * @return self
-   *   The invoked object.
+   * @return $this
    */
   public function setDescription($description);
 
@@ -138,12 +135,11 @@ interface GenericFieldInterface {
   /**
    * Sets this field's label prefix.
    *
-   * @param $label_prefix
+   * @param string $label_prefix
    *   A human-readable label representing this field's datasource and ending in
    *   some kind of visual separator.
    *
-   * @return self
-   *   The invoked object.
+   * @return $this
    */
   public function setLabelPrefix($label_prefix);
 
@@ -153,7 +149,7 @@ interface GenericFieldInterface {
    * @return \Drupal\Core\TypedData\DataDefinitionInterface
    *   The data definition object for this field.
    *
-   * @throws \Drupal\search_api\Exception\SearchApiException
+   * @throws \Drupal\search_api\SearchApiException
    *   If the field's data definition is unknown.
    */
   public function getDataDefinition();

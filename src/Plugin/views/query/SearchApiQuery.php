@@ -9,8 +9,8 @@ namespace Drupal\search_api\Plugin\views\query;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Drupal\search_api\Entity\Index;
-use Drupal\search_api\Exception;
 use Drupal\search_api\Query\FilterInterface;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\query\QueryPluginBase;
@@ -48,7 +48,7 @@ class SearchApiQuery extends QueryPluginBase {
   /**
    * The index this view accesses.
    *
-   * @var \Drupal\search_api\Index\IndexInterface
+   * @var \Drupal\search_api\IndexInterface
    */
   protected $index;
 
@@ -288,7 +288,7 @@ class SearchApiQuery extends QueryPluginBase {
 
     // If the View and the Panel conspire to provide an overridden path then
     // pass that through as the base path.
-    if (($path = $this->view->getPath()) && strpos(current_path(), $this->view->override_path) !== 0) {
+    if (($path = $this->view->getPath()) && strpos(Url::fromRoute('<current>')->toString(), $this->view->override_path) !== 0) {
       $this->query->setOption('search_api_base_path', $path);
     }
   }
@@ -538,8 +538,7 @@ class SearchApiQuery extends QueryPluginBase {
    *   getKeys(). A passed string will be parsed according to the set parse
    *   mode. Use NULL to not use any search keys.
    *
-   * @return \Drupal\search_api\Query\QueryInterface
-   *   The called object.
+   * @return $this
    *
    * @see \Drupal\search_api\Query\QueryInterface::keys()
    */
@@ -558,10 +557,9 @@ class SearchApiQuery extends QueryPluginBase {
    * @param array $fields
    *   An array containing fulltext fields that should be searched.
    *
-   * @return \Drupal\search_api\Query\QueryInterface
-   *   The called object.
+   * @return $this
    *
-   * @throws \Drupal\search_api\Exception\SearchApiException
+   * @throws \Drupal\search_api\SearchApiException
    *   If one of the fields isn't of type "text".
    *
    * @see \Drupal\search_api\Query\QueryInterface::fields()
@@ -581,12 +579,11 @@ class SearchApiQuery extends QueryPluginBase {
    * instead.
    *
    * @param \Drupal\search_api\Query\FilterInterface $filter
-   *   A DefaultFilter object that should be added as a subfilter.
+   *   A filter that should be added as a subfilter.
    * @param string|null $group
    *   (optional) The Views query filter group to add this filter to.
    *
-   * @return \Drupal\search_api\Query\QueryInterface
-   *   The called object.
+   * @return $this
    *
    * @see \Drupal\search_api\Query\QueryInterface::filter()
    */
@@ -617,8 +614,7 @@ class SearchApiQuery extends QueryPluginBase {
    * @param string|null $group
    *   (optional) The Views query filter group to add this filter to.
    *
-   * @return \Drupal\search_api\Query\QueryInterface
-   *   The called object.
+   * @return $this
    *
    * @see \Drupal\search_api\Query\QueryInterface::condition()
    */
@@ -641,10 +637,9 @@ class SearchApiQuery extends QueryPluginBase {
    * @param string $order
    *   The order to sort items in - either 'ASC' or 'DESC'.
    *
-   * @return \Drupal\search_api\Query\QueryInterface
-   *   The called object.
+   * @return $this
    *
-   * @throws \Drupal\search_api\Exception\SearchApiException
+   * @throws \Drupal\search_api\SearchApiException
    *   If the field is multi-valued or of a fulltext type.
    *
    * @see \Drupal\search_api\Query\QueryInterface::sort()
@@ -667,8 +662,7 @@ class SearchApiQuery extends QueryPluginBase {
    * @param int|null $limit
    *   The number of results to return.
    *
-   * @return \Drupal\search_api\Query\QueryInterface
-   *   The called object.
+   * @return $this
    *
    * @see \Drupal\search_api\Query\QueryInterface::range()
    */
@@ -682,7 +676,7 @@ class SearchApiQuery extends QueryPluginBase {
   /**
    * Retrieves the index associated with this search.
    *
-   * @return \Drupal\search_api\Index\IndexInterface
+   * @return \Drupal\search_api\IndexInterface
    *   The search index this query should be executed on.
    *
    * @see \Drupal\search_api\Query\QueryInterface::getIndex()
@@ -817,17 +811,18 @@ class SearchApiQuery extends QueryPluginBase {
    *
    * @param string $name
    *   The name of an option. The following options are recognized by default:
-   *   - conjunction: The type of conjunction to use for this query - either
+   *   - conjunction: The type of conjunction to use for this query – either
    *     'AND' or 'OR'. 'AND' by default. This only influences the search keys,
    *     filters will always use AND by default.
    *   - 'parse mode': The mode with which to parse the $keys variable, if it
-   *     is set and not already an array. See DefaultQuery::parseModes() for
-   *     recognized parse modes.
+   *     is set and not already an array. See
+   *     \Drupal\search_api\Query\Query::parseModes() for recognized parse
+   *     modes.
    *   - offset: The position of the first returned search results relative to
    *     the whole result in the index.
    *   - limit: The maximum number of search results to return. -1 means no
    *     limit.
-   *   - 'filter class': Can be used to change the FilterInterface
+   *   - 'filter class': Can be used to change the \Drupal\search_api\Query\FilterInterface
    *     implementation to use.
    *   - 'search id': A string that will be used as the identifier when storing
    *     this search in the Search API's static cache.
@@ -841,7 +836,7 @@ class SearchApiQuery extends QueryPluginBase {
    *     skipped, even if enabled for the index.
    *   However, contrib modules might introduce arbitrary other keys with their
    *   own, special meaning. (Usually they should be prefixed with the module
-   *   name, though.)
+   *   name, though, to avoid conflicts.)
    * @param mixed $value
    *   The new value of the option.
    *

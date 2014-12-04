@@ -8,7 +8,7 @@
 namespace Drupal\search_api\Tests\Processor;
 
 use Drupal\search_api\Entity\Index;
-use Drupal\search_api\Tests\SearchApiWebTestBase;
+use Drupal\search_api\Tests\WebTestBase;
 
 /**
  * Tests the admin UI for processors.
@@ -17,7 +17,7 @@ use Drupal\search_api\Tests\SearchApiWebTestBase;
  */
 // @todo Move this whole class into a single IntegrationTest check*() method?
 // @todo Add tests for the "Aggregated fields" and "Role filter" processors.
-class ProcessorIntegrationTest extends SearchApiWebTestBase {
+class ProcessorIntegrationTest extends WebTestBase {
 
   /**
    * The ID of the search index used by this test.
@@ -36,7 +36,7 @@ class ProcessorIntegrationTest extends SearchApiWebTestBase {
     $this->indexId = 'test_index';
     Index::create(array(
       'name' => 'Test index',
-      'machine_name' => $this->indexId,
+      'id' => $this->indexId,
       'status' => 1,
       'datasources' => array('entity:node'),
     ))->save();
@@ -248,7 +248,7 @@ class ProcessorIntegrationTest extends SearchApiWebTestBase {
   /**
    * Loads the search index used by this test.
    *
-   * @return \Drupal\search_api\Index\IndexInterface
+   * @return \Drupal\search_api\IndexInterface
    *   The search index used by this test.
    */
   protected function loadIndex() {

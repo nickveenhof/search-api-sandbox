@@ -8,9 +8,8 @@
 namespace Drupal\Tests\search_api\Plugin\Processor;
 
 use Drupal\Core\Entity\Plugin\DataType\EntityAdapter;
-use Drupal\search_api\Index\IndexInterface;
-use Drupal\search_api\Plugin\SearchApi\Processor\NodeStatus;
-use Drupal\search_api\Utility\Utility;
+use Drupal\search_api\Plugin\search_api\processor\NodeStatus;
+use Drupal\search_api\Utility;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -18,14 +17,14 @@ use Drupal\Tests\UnitTestCase;
  *
  * @group search_api
  *
- * @var \Drupal\search_api\Plugin\SearchApi\Processor\NodeStatus
+ * @var \Drupal\search_api\Plugin\search_api\processor\NodeStatus
  */
 class NodeStatusTest extends UnitTestCase {
 
   /**
-   * Stores the processor to be tested.
+   * The processor to be tested.
    *
-   * @var \Drupal\search_api\Plugin\SearchApi\Processor\NodeStatus
+   * @var \Drupal\search_api\Plugin\search_api\processor\NodeStatus
    */
   protected $processor;
 
@@ -50,13 +49,13 @@ class NodeStatusTest extends UnitTestCase {
       ->will($this->returnValue('node'));
     /** @var \Drupal\search_api\Datasource\DatasourceInterface $datasource */
 
-    $index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+    $index = $this->getMock('Drupal\search_api\IndexInterface');
     $index->expects($this->any())
       ->method('getDatasources')
       ->will($this->returnValue(array($datasource)));
-      /** @var \Drupal\search_api\Index\IndexInterface $index */
+      /** @var \Drupal\search_api\IndexInterface $index */
 
-    $item = Utility::createItem($index, 'entity:node' . IndexInterface::DATASOURCE_ID_SEPARATOR . '1:en', $datasource);
+    $item = Utility::createItem($index, Utility::createCombinedId('entity:node', '1:en'), $datasource);
     $unpublished_node = $this->getMockBuilder('Drupal\Tests\search_api\TestNodeInterface')
       ->disableOriginalConstructor()
       ->getMock();
@@ -69,7 +68,7 @@ class NodeStatusTest extends UnitTestCase {
     $item->setOriginalObject(EntityAdapter::createFromEntity($unpublished_node));
     $this->items[$item->getId()] = $item;
 
-    $item = Utility::createItem($index, 'entity:node' . IndexInterface::DATASOURCE_ID_SEPARATOR . '2:en', $datasource);
+    $item = Utility::createItem($index, Utility::createCombinedId('entity:node', '2:en'), $datasource);
     $published_node = $this->getMockBuilder('Drupal\Tests\search_api\TestNodeInterface')
       ->disableOriginalConstructor()
       ->getMock();
@@ -84,7 +83,7 @@ class NodeStatusTest extends UnitTestCase {
   }
 
   /**
-   * Tests whether supportsIndex() returns TRUE for an index cotnaining nodes.
+   * Tests whether supportsIndex() returns TRUE for an index containing nodes.
    */
   public function testSupportsIndexSupported() {
     $support = NodeStatus::supportsIndex(reset($this->items)->getIndex());
@@ -92,27 +91,26 @@ class NodeStatusTest extends UnitTestCase {
   }
 
   /**
-   * Tests whether supportsIndex() returns TRUE for an index cotnaining nodes.
+   * Tests whether supportsIndex() returns FALSE for an index without nodes.
    */
   public function testSupportsIndexUnsupported() {
-    $index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+    $index = $this->getMock('Drupal\search_api\IndexInterface');
     $index->expects($this->any())
       ->method('getDatasources')
       ->will($this->returnValue(array()));
-    /** @var \Drupal\search_api\Index\IndexInterface $index */
+    /** @var \Drupal\search_api\IndexInterface $index */
     $support = NodeStatus::supportsIndex($index);
     $this->assertFalse($support, 'Index containing no node datasource is not supported.');
   }
 
   /**
-   * Tests is unpublished nodes are removed from the items list.
+   * Tests if unpublished nodes are removed from the items list.
    */
   public function testNodeStatus() {
     $this->assertCount(2, $this->items, '2 nodes in the index.');
     $this->processor->preprocessIndexItems($this->items);
-
     $this->assertCount(1, $this->items, 'An item was removed from the items list.');
-    $published_nid = 'entity:node' . IndexInterface::DATASOURCE_ID_SEPARATOR . '2:en';
+    $published_nid = Utility::createCombinedId('entity:node', '2:en');
     $this->assertTrue(isset($this->items[$published_nid]), 'Correct item was removed.');
   }
 

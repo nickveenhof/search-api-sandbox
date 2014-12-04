@@ -10,7 +10,7 @@ namespace Drupal\Tests\search_api\Plugin\Processor;
 use Drupal\Core\Entity\Plugin\DataType\EntityAdapter;
 use Drupal\Core\Language\Language as CoreLanguage;
 use Drupal\Core\TypedData\DataDefinitionInterface;
-use Drupal\search_api\Plugin\SearchApi\Processor\Language;
+use Drupal\search_api\Plugin\search_api\processor\Language;
 use Drupal\search_api\Tests\Processor\TestItemsTrait;
 use Drupal\Tests\UnitTestCase;
 
@@ -19,23 +19,23 @@ use Drupal\Tests\UnitTestCase;
  *
  * @group search_api
  *
- * @see \Drupal\search_api\Plugin\SearchApi\Processor\Language
+ * @see \Drupal\search_api\Plugin\search_api\processor\Language
  */
 class LanguageTest extends UnitTestCase {
 
   use TestItemsTrait;
 
   /**
-   * Stores the processor to be tested.
+   * The processor to be tested.
    *
-   * @var \Drupal\search_api\Plugin\SearchApi\Processor\Language
+   * @var \Drupal\search_api\Plugin\search_api\processor\Language
    */
   protected $processor;
 
   /**
    * A test index mock to use for tests.
    *
-   * @var \Drupal\search_api\Index\IndexInterface
+   * @var \Drupal\search_api\IndexInterface
    */
   protected $index;
 
@@ -45,7 +45,7 @@ class LanguageTest extends UnitTestCase {
   protected function setUp() {
     parent::setUp();
 
-    $this->index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+    $this->index = $this->getMock('Drupal\search_api\IndexInterface');
 
     /** @var \Drupal\Core\StringTranslation\TranslationInterface $translation */
     $translation = $this->getStringTranslationStub();
@@ -56,10 +56,10 @@ class LanguageTest extends UnitTestCase {
   /**
    * Tests whether the "Item language" field is properly added to the index.
    *
-   * @see \Drupal\search_api\Plugin\SearchApi\Processor\Language::alterPropertyDefinitions()
+   * @see \Drupal\search_api\Plugin\search_api\processor\Language::alterPropertyDefinitions()
    */
   public function testAlterProperties() {
-    // Tests whether the property gets properly added to the
+    // Test whether the property gets properly added to the
     // datasource-independent properties.
     $properties = array();
     $this->processor->alterPropertyDefinitions($properties);
@@ -67,13 +67,13 @@ class LanguageTest extends UnitTestCase {
     if (!empty($properties['search_api_language'])) {
       $this->assertInstanceOf('Drupal\Core\TypedData\DataDefinitionInterface', $properties['search_api_language'], 'Added "search_api_language" property implements the necessary interface.');
       if ($properties['search_api_language'] instanceof DataDefinitionInterface) {
-        $this->assertEquals($properties['search_api_language']->getLabel(), 'Item language', 'Correct label for "search_api_language" property.');
-        $this->assertEquals($properties['search_api_language']->getDescription(), 'The language code of the item.', 'Correct description for "search_api_language" property.');
-        $this->assertEquals($properties['search_api_language']->getDataType(), 'string', 'Correct type for "search_api_language" property.');
+        $this->assertEquals('Item language', $properties['search_api_language']->getLabel(), 'Correct label for "search_api_language" property.');
+        $this->assertEquals('The language code of the item.', $properties['search_api_language']->getDescription(), 'Correct description for "search_api_language" property.');
+        $this->assertEquals('string', $properties['search_api_language']->getDataType(), 'Correct type for "search_api_language" property.');
       }
     }
 
-    // Tests whether the properties of specific datasources stay untouched.
+    // Test whether the properties of specific datasources stay untouched.
     $properties = array();
     /** @var \Drupal\search_api\Datasource\DatasourceInterface $datasource */
     $datasource = $this->getMock('Drupal\search_api\Datasource\DatasourceInterface');
@@ -84,7 +84,7 @@ class LanguageTest extends UnitTestCase {
   /**
    * Tests whether the "Item language" field is properly added to indexed items.
    *
-   * @see \Drupal\search_api\Plugin\SearchApi\Processor\Language::preprocessIndexItems()
+   * @see \Drupal\search_api\Plugin\search_api\processor\Language::preprocessIndexItems()
    */
   public function testPreprocessIndexItems() {
     $fields = array(

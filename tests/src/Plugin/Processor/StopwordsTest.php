@@ -7,8 +7,8 @@
 
 namespace Drupal\Tests\search_api\Plugin\Processor;
 
-use Drupal\search_api\Plugin\SearchApi\Processor\Stopwords;
-use Drupal\search_api\Utility\Utility;
+use Drupal\search_api\Plugin\search_api\processor\Stopwords;
+use Drupal\search_api\Utility;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -16,7 +16,7 @@ use Drupal\Tests\UnitTestCase;
  *
  * @group search_api
  *
- * @see \Drupal\search_api\Plugin\SearchApi\Processor\Stopwords
+ * @see \Drupal\search_api\Plugin\search_api\processor\Stopwords
  */
 class StopwordsTest extends UnitTestCase {
 
@@ -33,12 +33,19 @@ class StopwordsTest extends UnitTestCase {
   /**
    * Tests the process() method of the Stopwords processor.
    *
+   * @param string $passed_value
+   *   The string that should be passed to process().
+   * @param string $expected_value
+   *   The expected altered string.
+   * @param string[] $stopwords
+   *   The stopwords with which to configure the test processor.
+   *
    * @dataProvider processDataProvider
    */
-  public function testProcess($passedString, $expectedString, $stopwordsConfig) {
-    $this->processor->setConfiguration(array('stopwords' => $stopwordsConfig));
-    $this->invokeMethod('process', array(&$passedString));
-    $this->assertEquals($passedString, $expectedString);
+  public function testProcess($passed_value, $expected_value, array $stopwords) {
+    $this->processor->setConfiguration(array('stopwords' => $stopwords));
+    $this->invokeMethod('process', array(&$passed_value));
+    $this->assertEquals($expected_value, $passed_value);
   }
 
   /**
@@ -90,14 +97,11 @@ class StopwordsTest extends UnitTestCase {
    * Tests the processor's preprocessSearchQuery() method.
    */
   public function testPreprocessSearchQuery() {
-    $index = $this->getMock('Drupal\search_api\Index\IndexInterface');
+    $index = $this->getMock('Drupal\search_api\IndexInterface');
     $index->expects($this->any())
       ->method('status')
       ->will($this->returnValue(TRUE));
-    $index->expects($this->any())
-      ->method('getFields')
-      ->will($this->returnValue(array()));
-    /** @var \Drupal\search_api\Index\IndexInterface $index */
+    /** @var \Drupal\search_api\IndexInterface $index */
 
     $this->processor->setIndex($index);
     $query = Utility::createQuery($index);

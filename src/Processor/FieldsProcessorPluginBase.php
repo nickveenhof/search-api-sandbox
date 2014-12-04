@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\search_api\Processor\FieldsProcessorPluginBase.
+ * Contains \Drupal\search_api\Processor\FieldsProcessorPluginBase.
  */
 
 namespace Drupal\search_api\Processor;
@@ -12,7 +12,7 @@ use Drupal\Core\Render\Element;
 use Drupal\search_api\Item\FieldInterface;
 use Drupal\search_api\Query\FilterInterface;
 use Drupal\search_api\Query\QueryInterface;
-use Drupal\search_api\Utility\Utility;
+use Drupal\search_api\Utility;
 
 /**
  * Provides a base class for processors that work on individual fields.
@@ -249,7 +249,7 @@ abstract class FieldsProcessorPluginBase extends ProcessorPluginBase {
    * Tests whether a certain field should be processed.
    *
    * @param string $name
-   *   The field's machine name.
+   *   The field's ID.
    * @param \Drupal\search_api\Item\FieldInterface $field
    *   The field's information.
    *

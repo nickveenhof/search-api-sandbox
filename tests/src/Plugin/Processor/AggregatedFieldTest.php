@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Contains \Drupal\Tests\search_api\Plugin\Processor\AggregatedFieldTest.
@@ -7,33 +8,33 @@
 namespace Drupal\Tests\search_api\Plugin\Processor;
 
 use Drupal\Core\TypedData\DataDefinitionInterface;
-use Drupal\search_api\Plugin\SearchApi\Processor\AggregatedField;
+use Drupal\search_api\Plugin\search_api\processor\AggregatedFields;
 use Drupal\search_api\Tests\Processor\TestItemsTrait;
-use Drupal\search_api\Utility\Utility;
+use Drupal\search_api\Utility;
 use Drupal\Tests\UnitTestCase;
 
 /**
- * Tests the "URL field" processor.
+ * Tests the "Aggregated fields" processor.
  *
  * @group search_api
  *
- * @see \Drupal\search_api\Plugin\SearchApi\Processor\AggregatedField
+ * @see \Drupal\search_api\Plugin\search_api\processor\AggregatedField
  */
 class AggregatedFieldTest extends UnitTestCase {
 
   use TestItemsTrait;
 
   /**
-   * Stores the processor to be tested.
+   * The processor to be tested.
    *
-   * @var \Drupal\search_api\Plugin\SearchApi\Processor\AggregatedField
+   * @var \Drupal\search_api\Plugin\search_api\processor\AggregatedFields
    */
   protected $processor;
 
   /**
-   * A mocked search index for the tests.
+   * A search index mock for the tests.
    *
-   * @var \Drupal\search_api\Index\IndexInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\search_api\IndexInterface|\PHPUnit_Framework_MockObject_MockObject
    */
   protected $index;
 
@@ -43,8 +44,8 @@ class AggregatedFieldTest extends UnitTestCase {
   protected function setUp() {
     parent::setUp();
 
-    $this->index = $this->getMock('Drupal\search_api\Index\IndexInterface');
-    $this->processor = new AggregatedField(array('index' => $this->index), 'aggregated_field', array());
+    $this->index = $this->getMock('Drupal\search_api\IndexInterface');
+    $this->processor = new AggregatedFields(array('index' => $this->index), 'aggregated_field', array());
   }
 
   /**
@@ -58,9 +59,9 @@ class AggregatedFieldTest extends UnitTestCase {
           'label' => 'Test field',
           'type' => 'union',
           'fields' => array(
-            'entity:test1|foo',
-            'entity:test1|foo:bar',
-            'entity:test2|foobaz:bla',
+            'entity:test1/foo',
+            'entity:test1/foo:bar',
+            'entity:test2/foobaz:bla',
           ),
         ),
       ),
@@ -68,15 +69,15 @@ class AggregatedFieldTest extends UnitTestCase {
     $this->processor->setConfiguration($configuration);
 
     $fields = array(
-      'entity:test1|foo' => array(
+      'entity:test1/foo' => array(
         'type' => 'string',
         'values' => array('foo', 'bar'),
       ),
-      'entity:test1|foo:bar' => array(
+      'entity:test1/foo:bar' => array(
         'type' => 'string',
         'values' => array('baz'),
       ),
-      'entity:test2|foobaz:bla' => array(
+      'entity:test2/foobaz:bla' => array(
         'type' => 'string',
         'values' => array('foobar'),
       ),
@@ -106,9 +107,9 @@ class AggregatedFieldTest extends UnitTestCase {
           'label' => 'Test field',
           'type' => 'concat',
           'fields' => array(
-            'entity:test1|foo',
-            'entity:test1|foo:bar',
-            'entity:test2|foobaz:bla',
+            'entity:test1/foo',
+            'entity:test1/foo:bar',
+            'entity:test2/foobaz:bla',
           ),
         ),
       ),
@@ -116,15 +117,15 @@ class AggregatedFieldTest extends UnitTestCase {
     $this->processor->setConfiguration($configuration);
 
     $fields = array(
-      'entity:test1|foo' => array(
+      'entity:test1/foo' => array(
         'type' => 'string',
         'values' => array('foo', 'bar'),
       ),
-      'entity:test1|foo:bar' => array(
+      'entity:test1/foo:bar' => array(
         'type' => 'string',
         'values' => array('baz'),
       ),
-      'entity:test2|foobaz:bla' => array(
+      'entity:test2/foobaz:bla' => array(
         'type' => 'string',
         'values' => array('foobar'),
       ),
@@ -154,9 +155,9 @@ class AggregatedFieldTest extends UnitTestCase {
           'label' => 'Test field',
           'type' => 'sum',
           'fields' => array(
-            'entity:test1|foo',
-            'entity:test1|foo:bar',
-            'entity:test2|foobaz:bla',
+            'entity:test1/foo',
+            'entity:test1/foo:bar',
+            'entity:test2/foobaz:bla',
           ),
         ),
       ),
@@ -164,15 +165,15 @@ class AggregatedFieldTest extends UnitTestCase {
     $this->processor->setConfiguration($configuration);
 
     $fields = array(
-      'entity:test1|foo' => array(
+      'entity:test1/foo' => array(
         'type' => 'integer',
         'values' => array(2, 4),
       ),
-      'entity:test1|foo:bar' => array(
+      'entity:test1/foo:bar' => array(
         'type' => 'integer',
         'values' => array(16),
       ),
-      'entity:test2|foobaz:bla' => array(
+      'entity:test2/foobaz:bla' => array(
         'type' => 'integer',
         'values' => array(7),
       ),
@@ -202,9 +203,9 @@ class AggregatedFieldTest extends UnitTestCase {
           'label' => 'Test field',
           'type' => 'count',
           'fields' => array(
-            'entity:test1|foo',
-            'entity:test1|foo:bar',
-            'entity:test2|foobaz:bla',
+            'entity:test1/foo',
+            'entity:test1/foo:bar',
+            'entity:test2/foobaz:bla',
           ),
         ),
       ),
@@ -212,15 +213,15 @@ class AggregatedFieldTest extends UnitTestCase {
     $this->processor->setConfiguration($configuration);
 
     $fields = array(
-      'entity:test1|foo' => array(
+      'entity:test1/foo' => array(
         'type' => 'string',
         'values' => array('foo', 'bar'),
       ),
-      'entity:test1|foo:bar' => array(
+      'entity:test1/foo:bar' => array(
         'type' => 'string',
         'values' => array('baz'),
       ),
-      'entity:test2|foobaz:bla' => array(
+      'entity:test2/foobaz:bla' => array(
         'type' => 'string',
         'values' => array('foobar'),
       ),
@@ -250,9 +251,9 @@ class AggregatedFieldTest extends UnitTestCase {
           'label' => 'Test field',
           'type' => 'max',
           'fields' => array(
-            'entity:test1|foo',
-            'entity:test1|foo:bar',
-            'entity:test2|foobaz:bla',
+            'entity:test1/foo',
+            'entity:test1/foo:bar',
+            'entity:test2/foobaz:bla',
           ),
         ),
       ),
@@ -260,15 +261,15 @@ class AggregatedFieldTest extends UnitTestCase {
     $this->processor->setConfiguration($configuration);
 
     $fields = array(
-      'entity:test1|foo' => array(
+      'entity:test1/foo' => array(
         'type' => 'integer',
         'values' => array(2, 4),
       ),
-      'entity:test1|foo:bar' => array(
+      'entity:test1/foo:bar' => array(
         'type' => 'integer',
         'values' => array(16),
       ),
-      'entity:test2|foobaz:bla' => array(
+      'entity:test2/foobaz:bla' => array(
         'type' => 'integer',
         'values' => array(7),
       ),
@@ -298,9 +299,9 @@ class AggregatedFieldTest extends UnitTestCase {
           'label' => 'Test field',
           'type' => 'min',
           'fields' => array(
-            'entity:test1|foo',
-            'entity:test1|foo:bar',
-            'entity:test2|foobaz:bla',
+            'entity:test1/foo',
+            'entity:test1/foo:bar',
+            'entity:test2/foobaz:bla',
           ),
         ),
       ),
@@ -308,15 +309,15 @@ class AggregatedFieldTest extends UnitTestCase {
     $this->processor->setConfiguration($configuration);
 
     $fields = array(
-      'entity:test1|foo' => array(
+      'entity:test1/foo' => array(
         'type' => 'integer',
         'values' => array(2, 4),
       ),
-      'entity:test1|foo:bar' => array(
+      'entity:test1/foo:bar' => array(
         'type' => 'integer',
         'values' => array(16),
       ),
-      'entity:test2|foobaz:bla' => array(
+      'entity:test2/foobaz:bla' => array(
         'type' => 'integer',
         'values' => array(7),
       ),
@@ -346,9 +347,9 @@ class AggregatedFieldTest extends UnitTestCase {
           'label' => 'Test field',
           'type' => 'first',
           'fields' => array(
-            'entity:test1|foo',
-            'entity:test1|foo:bar',
-            'entity:test2|foobaz:bla',
+            'entity:test1/foo',
+            'entity:test1/foo:bar',
+            'entity:test2/foobaz:bla',
           ),
         ),
       ),
@@ -356,15 +357,15 @@ class AggregatedFieldTest extends UnitTestCase {
     $this->processor->setConfiguration($configuration);
 
     $fields = array(
-      'entity:test1|foo' => array(
+      'entity:test1/foo' => array(
         'type' => 'string',
         'values' => array('foo', 'bar'),
       ),
-      'entity:test1|foo:bar' => array(
+      'entity:test1/foo:bar' => array(
         'type' => 'string',
         'values' => array('baz'),
       ),
-      'entity:test2|foobaz:bla' => array(
+      'entity:test2/foobaz:bla' => array(
         'type' => 'string',
         'values' => array('foobar'),
       ),
@@ -393,8 +394,8 @@ class AggregatedFieldTest extends UnitTestCase {
           'label' => 'Test field',
           'type' => 'union',
           'fields' => array(
-            'entity:test1|foo',
-            'entity:test1|foo:bar',
+            'entity:test1/foo',
+            'entity:test1/foo:bar',
           ),
         ),
       ),
@@ -402,11 +403,11 @@ class AggregatedFieldTest extends UnitTestCase {
     $this->processor->setConfiguration($configuration);
 
     $fields = array(
-      'entity:test1|foo' => array(
+      'entity:test1/foo' => array(
         'type' => 'string',
         'values' => array('foo', 'bar'),
       ),
-      'entity:test1|foo:bar' => array(
+      'entity:test1/foo:bar' => array(
         'type' => 'string',
         'values' => array('baz'),
       ),
@@ -420,15 +421,15 @@ class AggregatedFieldTest extends UnitTestCase {
   }
 
   /**
-   * Tests alterPropertyDefinitions.
+   * Tests whether the properties are correctly altered.
    *
-   * Checks for the correct DataDefinition added to the properties.
+   * @see \Drupal\search_api\Plugin\search_api\processor\AggregatedField::alterPropertyDefinitions()
    */
   public function testAlterPropertyDefinitions() {
     $fields = array(
-      'entity:test1|foo',
-      'entity:test1|foo:bar',
-      'entity:test2|foobaz:bla',
+      'entity:test1/foo',
+      'entity:test1/foo:bar',
+      'entity:test2/foobaz:bla',
     );
     $index_fields = array();
     foreach ($fields as $field_id) {
@@ -447,16 +448,16 @@ class AggregatedFieldTest extends UnitTestCase {
         'label' => 'Field 1',
         'type' => 'union',
         'fields' => array(
-          'entity:test1|foo',
-          'entity:test1|foo:bar',
-          'entity:test2|foobaz:bla',
+          'entity:test1/foo',
+          'entity:test1/foo:bar',
+          'entity:test2/foobaz:bla',
         ),
       ),
       'search_api_aggregation_2' => array(
         'label' => 'Field 2',
         'type' => 'max',
         'fields' => array(
-          'entity:test1|foo:bar',
+          'entity:test1/foo:bar',
         ),
       ),
     );
@@ -494,7 +495,7 @@ class AggregatedFieldTest extends UnitTestCase {
       }
     }
 
-    // Tests whether the properties of specific datasources stay untouched.
+    // Test whether the properties of specific datasources stay untouched.
     $properties = array();
     /** @var \Drupal\search_api\Datasource\DatasourceInterface $datasource */
     $datasource = $this->getMock('Drupal\search_api\Datasource\DatasourceInterface');

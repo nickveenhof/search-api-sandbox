@@ -15,14 +15,15 @@ use Drupal\Core\Field\TypedData\FieldItemDataDefinition;
 use Drupal\Core\TypedData\ComplexDataDefinitionInterface;
 use Drupal\Core\TypedData\DataReferenceDefinitionInterface;
 use Drupal\Core\TypedData\ListDataDefinitionInterface;
-use Drupal\search_api\Exception\SearchApiException;
-use Drupal\search_api\Index\IndexInterface;
+use Drupal\search_api\SearchApiException;
+use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Item\GenericFieldInterface;
 use Drupal\search_api\Processor\ProcessorInterface;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api\Query\ResultSetInterface;
-use Drupal\search_api\Server\ServerInterface;
-use Drupal\search_api\Utility\Utility;
+use Drupal\search_api\ServerInterface;
+use Drupal\search_api\Utility;
+
 /**
  * Defines the search index configuration entity.
  *
@@ -46,7 +47,7 @@ use Drupal\search_api\Utility\Utility;
  *   admin_permission = "administer search_api",
  *   config_prefix = "index",
  *   entity_keys = {
- *     "id" = "machine_name",
+ *     "id" = "id",
  *     "label" = "name",
  *     "uuid" = "uuid",
  *     "status" = "status"
@@ -68,7 +69,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    *
    * @var string
    */
-  protected $machine_name;
+  protected $id;
 
   /**
    * A name to be displayed for the index.
@@ -121,7 +122,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    *
    * @see getDatasources()
    */
-  protected $datasourcePluginInstances;
+  protected $datasourcePlugins;
 
   /**
    * The tracker plugin ID.
@@ -144,7 +145,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    *
    * @see getTracker()
    */
-  protected $trackerPluginInstance;
+  protected $trackerPlugin;
 
   /**
    * The ID of the server on which data should be indexed.
@@ -156,7 +157,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
   /**
    * The server entity belonging to this index.
    *
-   * @var \Drupal\search_api\Server\ServerInterface
+   * @var \Drupal\search_api\ServerInterface
    *
    * @see getServer()
    */
@@ -262,7 +263,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    * {@inheritdoc}
    */
   public function id() {
-    return $this->machine_name;
+    return $this->id;
   }
 
   /**
@@ -339,7 +340,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
     if (empty($datasources[$datasource_id])) {
       $args['@datasource'] = $datasource_id;
       $args['%index'] = $this->label();
-      throw new SearchApiException(t('The datasource with ID "@datasource" could not be retrieved for index %index.', $args));
+      throw new SearchApiException(String::format('The datasource with ID "@datasource" could not be retrieved for index %index.', $args));
     }
     return $datasources[$datasource_id];
   }
@@ -348,19 +349,19 @@ class Index extends ConfigEntityBase implements IndexInterface {
    * {@inheritdoc}
    */
   public function getDatasources() {
-    if (!isset($this->datasourcePluginInstances)) {
-      $this->datasourcePluginInstances = array();
+    if (!isset($this->datasourcePlugins)) {
+      $this->datasourcePlugins = array();
       $plugin_manager = \Drupal::service('plugin.manager.search_api.datasource');
       foreach ($this->datasources as $datasource) {
         $config = array('index' => $this);
         if (isset($this->datasource_configs[$datasource])) {
           $config += $this->datasource_configs[$datasource];
         }
-        $this->datasourcePluginInstances[$datasource] = $plugin_manager->createInstance($datasource, $config);
+        $this->datasourcePlugins[$datasource] = $plugin_manager->createInstance($datasource, $config);
       }
     }
 
-    return $this->datasourcePluginInstances;
+    return $this->datasourcePlugins;
   }
 
   /**
@@ -381,23 +382,23 @@ class Index extends ConfigEntityBase implements IndexInterface {
    * {@inheritdoc}
    */
   public function getTracker() {
-    if (!$this->trackerPluginInstance) {
+    if (!$this->trackerPlugin) {
       $tracker_plugin_configuration = array('index' => $this) + $this->tracker_config;
-      if (!($this->trackerPluginInstance = \Drupal::service('plugin.manager.search_api.tracker')->createInstance($this->getTrackerId(), $tracker_plugin_configuration))) {
+      if (!($this->trackerPlugin = \Drupal::service('plugin.manager.search_api.tracker')->createInstance($this->getTrackerId(), $tracker_plugin_configuration))) {
         $args['@tracker'] = $this->tracker;
         $args['%index'] = $this->label();
-        throw new SearchApiException(t('The tracker with ID "@tracker" could not be retrieved for index %index.', $args));
+        throw new SearchApiException(String::format('The tracker with ID "@tracker" could not be retrieved for index %index.', $args));
       }
     }
 
-    return $this->trackerPluginInstance;
+    return $this->trackerPlugin;
   }
 
   /**
    * {@inheritdoc}
    */
   public function hasValidServer() {
-    return $this->server !== NULL && entity_load('search_api_server', $this->server) !== NULL;
+    return $this->server !== NULL && Server::load($this->server) !== NULL;
   }
 
   /**
@@ -419,11 +420,11 @@ class Index extends ConfigEntityBase implements IndexInterface {
    */
   public function getServer() {
     if (!$this->serverInstance && $this->server) {
-      $this->serverInstance = entity_load('search_api_server', $this->server);
+      $this->serverInstance = Server::load($this->server);
       if (!$this->serverInstance) {
         $args['@server'] = $this->server;
         $args['%index'] = $this->label();
-        throw new SearchApiException(t('The server with ID "@server" could not be retrieved for index %index.', $args));
+        throw new SearchApiException(String::format('The server with ID "@server" could not be retrieved for index %index.', $args));
       }
     }
 
@@ -663,7 +664,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    *   Internal use only. A prefix to use for the generated field labels in this
    *   method.
    *
-   * @throws \Drupal\search_api\Exception\SearchApiException
+   * @throws \Drupal\search_api\SearchApiException
    *   If $datasource_id is no valid datasource for this index.
    */
   protected function convertPropertyDefinitionsToFields(array $properties, $datasource_id = NULL, $prefix = '', $label_prefix = '') {
@@ -955,10 +956,10 @@ class Index extends ConfigEntityBase implements IndexInterface {
       return array();
     }
     if (!$this->status) {
-      throw new SearchApiException(t("Couldn't index values on index %index (index is disabled)", array('%index' => $this->label())));
+      throw new SearchApiException(String::format("Couldn't index values on index %index (index is disabled)", array('%index' => $this->label())));
     }
     if (empty($this->options['fields'])) {
-      throw new SearchApiException(t("Couldn't index values on index %index (no fields selected)", array('%index' => $this->label())));
+      throw new SearchApiException(String::format("Couldn't index values on index %index (no fields selected)", array('%index' => $this->label())));
     }
 
     /** @var \Drupal\search_api\Item\ItemInterface[] $items */
@@ -1118,8 +1119,8 @@ class Index extends ConfigEntityBase implements IndexInterface {
    * {@inheritdoc}
    */
   public function resetCaches($include_stored = TRUE) {
-    $this->datasourcePluginInstances = NULL;
-    $this->trackerPluginInstance = NULL;
+    $this->datasourcePlugins = NULL;
+    $this->trackerPlugin = NULL;
     $this->serverInstance = NULL;
     $this->fields = NULL;
     $this->datasourceFields = NULL;
@@ -1137,7 +1138,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    */
   public function query(array $options = array()) {
     if (!$this->status()) {
-      throw new SearchApiException(t('Cannot search on a disabled index.'));
+      throw new SearchApiException('Cannot search on a disabled index.');
     }
     return Utility::createQuery($this, $options);
   }
@@ -1172,8 +1173,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
 
     try {
       // Fake an original for inserts to make code cleaner.
-      /** @var \Drupal\search_api\Index\IndexInterface $original */
-      $original = $update ? $this->original : entity_create($this->getEntityTypeId(), array('status' => FALSE));
+      $original = $update ? $this->original : static::create(array('status' => FALSE));
 
       if ($this->status() && $original->status()) {
         // React on possible changes that would require re-indexing, etc.
@@ -1213,7 +1213,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    * Used as a helper method in postSave(). Should only be called when the index
    * was enabled before the change and remained so.
    *
-   * @param \Drupal\search_api\Index\IndexInterface $original
+   * @param \Drupal\search_api\IndexInterface $original
    *   The previous version of the index.
    */
   protected function reactToServerSwitch(IndexInterface $original) {
@@ -1239,7 +1239,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    * Used as a helper method in postSave(). Should only be called when the index
    * was enabled before the change and remained so.
    *
-   * @param \Drupal\search_api\Index\IndexInterface $original
+   * @param \Drupal\search_api\IndexInterface $original
    *   The previous version of the index.
    */
   protected function reactToDatasourceSwitch(IndexInterface $original) {
@@ -1266,7 +1266,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    * Used as a helper method in postSave(). Should only be called when the index
    * was enabled before the change and remained so.
    *
-   * @param \Drupal\search_api\Index\IndexInterface $original
+   * @param \Drupal\search_api\IndexInterface $original
    *   The previous version of the index.
    */
   protected function reactToTrackerSwitch(IndexInterface $original) {
@@ -1285,7 +1285,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    */
   public static function preDelete(EntityStorageInterface $storage, array $entities) {
     parent::preDelete($storage, $entities);
-    /** @var \Drupal\search_api\Index\IndexInterface[] $entities */
+    /** @var \Drupal\search_api\IndexInterface[] $entities */
     foreach ($entities as $index) {
       if ($index->hasValidTracker()) {
         $index->getTracker()->trackAllItemsDeleted();

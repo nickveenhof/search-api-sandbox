@@ -7,7 +7,8 @@
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Render\Element;
-use Drupal\search_api\Utility\Utility;
+use Drupal\Core\Url;
+use Drupal\search_api\Utility;
 
 /**
  * Returns HTML for a fields form table.
@@ -57,7 +58,7 @@ function theme_search_api_admin_fields_table($variables) {
     '#rows' => $rows,
   );
 
-  $output .= drupal_render($build);
+  $output .= render($build);
   $output .= render($note);
   if ($additional) {
     $output .= render($additional);
@@ -80,7 +81,7 @@ function theme_search_api_admin_fields_table($variables) {
  */
 function theme_search_api_server($variables) {
   // Get the search server.
-  /** @var $server \Drupal\search_api\Server\ServerInterface */
+  /** @var $server \Drupal\search_api\ServerInterface */
   $server = $variables['server'];
 
   $output = '';
@@ -110,11 +111,11 @@ function theme_search_api_server($variables) {
   // Check if the server is enabled.
   if ($server->status()) {
     $class = 'ok';
-    $info = t('enabled (<a href="@url">disable</a>)', array('@url' => $server->urlInfo('disable')->toString()));
+    $info = t('enabled (<a href="@url">disable</a>)', array('@url' => $server->url('disable')));
   }
   else {
     $class = 'warning';
-    $info = t('disabled (<a href="@url">enable</a>)', array('@url' => $server->urlInfo('enable')->toString()));
+    $info = t('disabled (<a href="@url">enable</a>)', array('@url' => $server->url('enable')));
   }
   // Append the row and reset variables.
   $label = t('Status');
@@ -123,8 +124,8 @@ function theme_search_api_server($variables) {
 
   // Check if the backend used by the server is valid and get its label.
   if ($server->hasValidBackend()) {
-    $backend_plugin_definition = $server->getBackend()->getPluginDefinition();
-    $info = String::checkPlain($backend_plugin_definition['label']);
+    $backend = $server->getBackend();
+    $info = String::checkPlain($backend->label());
   }
   else {
     $class = 'error';
@@ -145,7 +146,7 @@ function theme_search_api_server($variables) {
   foreach ($server->getIndexes() as $index) {
     $indexes['#links'][] = array(
       'title' => $index->label(),
-      'href' => $index->getSystemPath(),
+      'url' => $index->urlInfo('canonical'),
     );
   }
   // Check if the indexes variable contains links.
@@ -174,7 +175,7 @@ function theme_search_api_server($variables) {
       ),
     ),
   );
-  $output .= drupal_render($server_info_table);
+  $output .= render($server_info_table);
 
   return $output;
 }
@@ -195,7 +196,7 @@ function theme_search_api_server($variables) {
 //   Definitely not cool.
 function theme_search_api_index($variables) {
   // Get the index.
-  /** @var $index \Drupal\search_api\Index\IndexInterface */
+  /** @var $index \Drupal\search_api\IndexInterface */
   $index = $variables['index'];
   $server = $index->hasValidServer() ? $index->getServer() : NULL;
   $tracker = $index->hasValidTracker() ? $index->getTracker() : NULL;
@@ -227,12 +228,12 @@ function theme_search_api_index($variables) {
   // Check if the index is enabled.
   if ($index->status()) {
     $class = 'ok';
-    $info = t('enabled (<a href="@url">disable</a>)', array('@url' => $index->urlInfo('disable')->toString()));
+    $info = t('enabled (<a href="@url">disable</a>)', array('@url' => $index->url('disable')));
   }
   // Check if a server is available and enabled.
   elseif ($server && $server->status()) {
     $class = 'warning';
-    $info = t('disabled (<a href="@url">enable</a>)', array('@url' => $index->urlInfo('enable')->toString()));
+    $info = t('disabled (<a href="@url">enable</a>)', array('@url' => $index->url('enable')));
   }
   else {
     $class = 'warning';
@@ -246,7 +247,7 @@ function theme_search_api_index($variables) {
   foreach ($index->getDatasourceIds() as $datasource_id) {
     // Check if the datasource is valid.
     if ($index->isValidDatasource($datasource_id)) {
-      $info = $index->getDatasource($datasource_id)->getPluginDefinition()['label'];
+      $info = $index->getDatasource($datasource_id)->label();
     }
     else {
       $class = 'error';
@@ -260,7 +261,7 @@ function theme_search_api_index($variables) {
 
   // Check if the tracker is valid.
   if ($tracker) {
-    $info = $tracker->getPluginDefinition()['label'];
+    $info = $tracker->label();
   }
   else {
     $class = 'error';
@@ -274,7 +275,7 @@ function theme_search_api_index($variables) {
   // Check if a server is available.
   if ($server) {
     $label = t('Server');
-    $info = \Drupal::linkGenerator()->generate($server->label(), $server->urlInfo('canonical'));
+    $info = $server->link(NULL, 'canonical');
     $rows[] = Utility::deepCopy($row);
   }
   elseif ($index->getServerId()) {
@@ -299,7 +300,7 @@ function theme_search_api_index($variables) {
       $response = $server->search($query);
 
       // Build the server index status translation variables.
-      $vars = array('@url' => _url('https://drupal.org/node/2009804#server-index-status'));
+      $vars = array('@url' => Url::fromUri('https://drupal.org/node/2009804#server-index-status')->toString());
       // Build the server index status info.
       $label = t('Server index status');
       $info = \Drupal::translation()->formatPlural($response->getResultCount(), 'There is 1 item indexed on the server for this index. (<a href="@url">More information</a>)', 'There are @count items indexed on the server for this index. (<a href="@url">More information</a>)', $vars);
@@ -333,7 +334,7 @@ function theme_search_api_index($variables) {
         '#message' => t('@indexed/@total indexed', array('@indexed' => $indexed_count, '@total' => $total_count)),
       );
       $output .= '<h3>' . t('Index status') . '</h3>';
-      $output .= '<div class="search-api-index-status">' . drupal_render($index_progress) . '</div>';
+      $output .= '<div class="search-api-index-status">' . render($index_progress) . '</div>';
     }
   }
 
@@ -347,7 +348,7 @@ function theme_search_api_index($variables) {
       ),
     ),
   );
-  $output .= drupal_render($index_info_table);
+  $output .= render($index_info_table);
 
   return $output;
 }

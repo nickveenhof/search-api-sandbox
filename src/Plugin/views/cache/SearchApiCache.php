@@ -7,7 +7,7 @@
 
 namespace Drupal\search_api\Plugin\views\cache;
 
-use Drupal\search_api\Exception\SearchApiException;
+use Drupal\search_api\SearchApiException;
 use Drupal\search_api\Plugin\views\query\SearchApiQuery;
 use Drupal\views\Plugin\views\cache\Time;
 
@@ -18,7 +18,7 @@ use Drupal\views\Plugin\views\cache\Time;
  *
  * @ViewsCache(
  *   id = "search_api",
- *   title = @Translation("Search API specifc"),
+ *   title = @Translation("Search API specific"),
  *   help = @Translation("Cache Search API views. (Other methods probably won't work with search views.)")
  * )
  */
@@ -113,7 +113,7 @@ class SearchApiCache extends Time {
    * @return \Drupal\search_api\Plugin\views\query\SearchApiQuery|null
    *   The Search API Views query associated with the current view.
    *
-   * @throws \Drupal\search_api\Exception\SearchApiException
+   * @throws \Drupal\search_api\SearchApiException
    *   If there is no current Views query, or it is no Search API query.
    */
   protected function getQuery() {

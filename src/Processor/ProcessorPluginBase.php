@@ -8,7 +8,7 @@
 namespace Drupal\search_api\Processor;
 
 use Drupal\search_api\Datasource\DatasourceInterface;
-use Drupal\search_api\Index\IndexInterface;
+use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Plugin\IndexPluginBase;
 use Drupal\search_api\Query\QueryInterface;
 use Drupal\search_api\Query\ResultSetInterface;
@@ -24,7 +24,7 @@ use Drupal\search_api\Query\ResultSetInterface;
  * - label: The human-readable name of the processor, translated.
  * - description: A human-readable description for the processor, translated.
  *
- * A complete sample plugin definition should be defined as in this example:
+ * A complete plugin definition should be written as in this example:
  *
  * @code
  * @SearchApiProcessor(

@@ -8,6 +8,7 @@
 namespace Drupal\search_api\Plugin\views\argument;
 
 use Drupal\Component\Utility\String;
+use Drupal\taxonomy\Entity\Term;
 
 /**
  * Defines a contextual filter searching through all indexed taxonomy fields.
@@ -37,7 +38,7 @@ class SearchApiTaxonomyTerm extends SearchApiArgument {
     }
 
     if (!empty($this->value)) {
-      $terms = entity_load('taxonomy_term', $this->value);
+      $terms = Term::load($this->value);
 
       if (!empty($terms)) {
         $filter = $this->query->createFilter($outer_conjunction);
@@ -51,8 +52,8 @@ class SearchApiTaxonomyTerm extends SearchApiArgument {
           // Set filters for all term reference fields which don't specify a
           // vocabulary, as well as for all fields specifying the term's
           // vocabulary.
-          if (!empty($vocabulary_fields[$term->vocabulary_machine_name])) {
-            foreach ($vocabulary_fields[$term->vocabulary_machine_name] as $field) {
+          if (!empty($vocabulary_fields[$term->vocabulary_id])) {
+            foreach ($vocabulary_fields[$term->vocabulary_id] as $field) {
               $inner_filter->condition($field, $term->tid, $condition_operator);
             }
           }
@@ -77,9 +78,9 @@ class SearchApiTaxonomyTerm extends SearchApiArgument {
       $this->fillValue();
       $terms = array();
       foreach ($this->value as $tid) {
-        $taxonomy_term = taxonomy_term_load($tid);
+        $taxonomy_term = Term::load($tid);
         if ($taxonomy_term) {
-          $terms[] = String::checkPlain($taxonomy_term->name);
+          $terms[] = String::checkPlain($taxonomy_term->label());
         }
       }
 

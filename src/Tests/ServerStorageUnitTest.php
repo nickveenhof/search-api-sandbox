@@ -8,7 +8,7 @@
 namespace Drupal\search_api\Tests;
 
 use Drupal\Core\Config\Entity\ConfigEntityStorage;
-use Drupal\search_api\Server\ServerInterface;
+use Drupal\search_api\ServerInterface;
 use Drupal\simpletest\KernelTestBase;
 
 /**
@@ -28,7 +28,7 @@ class ServerStorageUnitTest extends KernelTestBase {
   /**
    * The search server storage.
    *
-   * @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface.
+   * @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface
    */
   protected $storage;
 
@@ -56,12 +56,12 @@ class ServerStorageUnitTest extends KernelTestBase {
   /**
    * Tests whether creating a server works correctly.
    *
-   * @return \Drupal\search_api\Server\ServerInterface
+   * @return \Drupal\search_api\ServerInterface
    *   The newly created search server.
    */
   public function serverCreate() {
     $serverData = array(
-      'machine_name' => $this->randomMachineName(),
+      'id' => $this->randomMachineName(),
       'name' => $this->randomString(),
       'backend' => 'search_api_test_backend',
     );
@@ -76,7 +76,7 @@ class ServerStorageUnitTest extends KernelTestBase {
   /**
    * Tests whether loading a server works correctly.
    *
-   * @param \Drupal\search_api\Server\ServerInterface $server
+   * @param \Drupal\search_api\ServerInterface $server
    *   The server used for this test.
    */
   public function serverLoad(ServerInterface $server) {
@@ -87,7 +87,7 @@ class ServerStorageUnitTest extends KernelTestBase {
   /**
    * Tests whether deleting a server works correctly.
    *
-   * @param \Drupal\search_api\Server\ServerInterface $server
+   * @param \Drupal\search_api\ServerInterface $server
    *   The server used for this test.
    */
   public function serverDelete(ServerInterface $server) {

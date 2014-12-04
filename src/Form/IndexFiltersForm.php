@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\search_api\Form\IndexFiltersFormController.
+ * Contains \Drupal\search_api\Form\IndexFiltersForm.
  */
 
 namespace Drupal\search_api\Form;
@@ -23,7 +23,7 @@ class IndexFiltersForm extends EntityForm {
   /**
    * The index being configured.
    *
-   * @var \Drupal\search_api\Index\IndexInterface
+   * @var \Drupal\search_api\IndexInterface
    */
   protected $entity;
 
@@ -108,7 +108,7 @@ class IndexFiltersForm extends EntityForm {
         '#title' => $processor->label(),
         '#default_value' => isset($processors_settings[$name]['status']) ? $processors_settings[$name]['status'] : 0,
         '#parents' => array('processors', $name, 'status'),
-        '#description' => $processor->getPluginDefinition()['description'],
+        '#description' => $processor->getDescription(),
         '#attributes' => array('class' => array(
           'search-api-processor-status-' . $name,
         )),

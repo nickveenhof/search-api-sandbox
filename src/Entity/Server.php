@@ -10,11 +10,11 @@ namespace Drupal\search_api\Entity;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\search_api\Exception\SearchApiException;
-use Drupal\search_api\Index\IndexInterface;
+use Drupal\search_api\SearchApiException;
+use Drupal\search_api\IndexInterface;
 use Drupal\search_api\Query\QueryInterface;
-use Drupal\search_api\Server\ServerInterface;
-use Drupal\search_api\Utility\Utility;
+use Drupal\search_api\ServerInterface;
+use Drupal\search_api\Utility;
 
 /**
  * Defines the search server configuration entity.
@@ -35,7 +35,7 @@ use Drupal\search_api\Utility\Utility;
  *   admin_permission = "administer search_api",
  *   config_prefix = "server",
  *   entity_keys = {
- *     "id" = "machine_name",
+ *     "id" = "id",
  *     "label" = "name",
  *     "uuid" = "uuid",
  *     "status" = "status"
@@ -53,11 +53,11 @@ use Drupal\search_api\Utility\Utility;
 class Server extends ConfigEntityBase implements ServerInterface {
 
   /**
-   * The machine name of the server.
+   * The ID of the server.
    *
    * @var string
    */
-  protected $machine_name;
+  protected $id;
 
   /**
    * The displayed name of the server.
@@ -92,14 +92,7 @@ class Server extends ConfigEntityBase implements ServerInterface {
    *
    * @var \Drupal\search_api\Backend\BackendInterface
    */
-  protected $backendPluginInstance;
-
-  /**
-   * {@inheritdoc}
-   */
-  public function id() {
-    return $this->machine_name;
-  }
+  protected $backendPlugin;
 
   /**
    * {@inheritdoc}
@@ -127,17 +120,17 @@ class Server extends ConfigEntityBase implements ServerInterface {
    * {@inheritdoc}
    */
   public function getBackend() {
-    if (!$this->backendPluginInstance) {
+    if (!$this->backendPlugin) {
       $backend_plugin_manager = \Drupal::service('plugin.manager.search_api.backend');
       $config = $this->backend_config;
       $config['server'] = $this;
-      if (!($this->backendPluginInstance = $backend_plugin_manager->createInstance($this->getBackendId(), $config))) {
+      if (!($this->backendPlugin = $backend_plugin_manager->createInstance($this->getBackendId(), $config))) {
         $args['@backend'] = $this->getBackendId();
         $args['%server'] = $this->label();
-        throw new SearchApiException(t('The backend with ID "@backend" could not be retrieved for server %server.', $args));
+        throw new SearchApiException(String::format('The backend with ID "@backend" could not be retrieved for server %server.', $args));
       }
     }
-    return $this->backendPluginInstance;
+    return $this->backendPlugin;
   }
 
   /**
@@ -259,7 +252,8 @@ class Server extends ConfigEntityBase implements ServerInterface {
     if ($server_task_manager->execute($this)) {
       return $this->getBackend()->indexItems($index, $items);
     }
-    throw new SearchApiException(t('Could not index items because pending server tasks could not be executed.'));
+    $args['%index'] = $index->label();
+    throw new SearchApiException(String::format('Could not index items on index %index because pending server tasks could not be executed.', $args));
   }
 
   /**
@@ -365,7 +359,7 @@ class Server extends ConfigEntityBase implements ServerInterface {
     // If the server is being disabled, also disable all its indexes.
     if (!$this->status() && isset($this->original) && $this->original->status()) {
       foreach ($this->getIndexes(array('status' => TRUE)) as $index) {
-        /** @var \Drupal\search_api\Index\IndexInterface $index */
+        /** @var \Drupal\search_api\IndexInterface $index */
         $index->setStatus(FALSE)->save();
       }
     }
@@ -405,7 +399,7 @@ class Server extends ConfigEntityBase implements ServerInterface {
       ->execute();
     $indexes = \Drupal::entityManager()->getStorage('search_api_index')->loadMultiple($index_ids);
     foreach ($indexes as $index) {
-      /** @var \Drupal\search_api\Index\IndexInterface $index */
+      /** @var \Drupal\search_api\IndexInterface $index */
       $index->setServer(NULL);
       $index->setStatus(FALSE);
       $index->save();
@@ -414,7 +408,7 @@ class Server extends ConfigEntityBase implements ServerInterface {
     // Iterate through the servers, executing the backends' preDelete() methods
     // and removing all their pending server tasks.
     foreach ($entities as $server) {
-      /** @var \Drupal\search_api\Server\ServerInterface $server */
+      /** @var \Drupal\search_api\ServerInterface $server */
       if ($server->hasValidBackend()) {
         $server->getBackend()->preDelete();
       }
@@ -432,7 +426,7 @@ class Server extends ConfigEntityBase implements ServerInterface {
     //   alternative would be to call $server->setBackendConfiguration() in the
     //   backend's setConfiguration() method and use a second $propagate
     //   parameter to avoid an infinite loop. Similar things go for the index's
-    //   various plugins. Maybe using PluginBagsInterface is the solution here?
+    //   various plugins. Maybe using plugin bags is the solution here?
     $properties = parent::toArray();
     if ($this->hasValidBackend()) {
       $properties['backend_config'] = $this->getBackend()->getConfiguration();
@@ -460,7 +454,7 @@ class Server extends ConfigEntityBase implements ServerInterface {
    * Prevents the backend plugin instance from being cloned.
    */
   public function __clone() {
-    $this->backendPluginInstance = NULL;
+    $this->backendPlugin = NULL;
   }
 
 }

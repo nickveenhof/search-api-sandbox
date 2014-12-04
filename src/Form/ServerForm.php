@@ -11,8 +11,9 @@ use Drupal\Component\Utility\String;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Drupal\search_api\Backend\BackendPluginManager;
-use Drupal\search_api\Server\ServerInterface;
+use Drupal\search_api\ServerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -62,7 +63,7 @@ class ServerForm extends EntityForm {
    * Retrieves the server storage controller.
    *
    * @return \Drupal\Core\Entity\EntityStorageInterface
-   *   An instance of EntityStorageInterface.
+   *   The server storage controller.
    */
   protected function getStorage() {
     return $this->storage ?: \Drupal::service('entity.manager')->getStorage('search_api_server');
@@ -72,7 +73,7 @@ class ServerForm extends EntityForm {
    * Retrieves the backend plugin manager.
    *
    * @return \Drupal\search_api\Backend\BackendPluginManager
-   *   An instance of BackendPluginManager.
+   *   The backend plugin manager.
    */
   protected function getBackendPluginManager() {
     return $this->backendPluginManager ?: \Drupal::service('plugin.manager.search_api.backend');
@@ -90,7 +91,7 @@ class ServerForm extends EntityForm {
 
     $form = parent::form($form, $form_state);
 
-    /** @var \Drupal\search_api\Server\ServerInterface $server */
+    /** @var \Drupal\search_api\ServerInterface $server */
     $server = $this->getEntity();
 
     // Set the page title according to whether we are creating or editing the
@@ -111,7 +112,7 @@ class ServerForm extends EntityForm {
   /**
    * Builds the form for the basic server properties.
    *
-   * @param \Drupal\search_api\Server\ServerInterface $server
+   * @param \Drupal\search_api\ServerInterface $server
    *   The server that is being created or edited.
    */
   public function buildEntityForm(array &$form, FormStateInterface $form_state, ServerInterface $server) {
@@ -124,7 +125,7 @@ class ServerForm extends EntityForm {
       '#default_value' => $server->label(),
       '#required' => TRUE,
     );
-    $form['machine_name'] = array(
+    $form['id'] = array(
       '#type' => 'machine_name',
       '#default_value' => $server->id(),
       '#maxlength' => 50,
@@ -167,7 +168,7 @@ class ServerForm extends EntityForm {
       );
     }
     else {
-      drupal_set_message($this->t('There are no backend plugins available for the Search API. Please install a <a href="@url">module that provides a backend plugin</a> to proceed.', array('@url' => _url('https://www.drupal.org/node/1254698'))), 'error');
+      drupal_set_message($this->t('There are no backend plugins available for the Search API. Please install a <a href="@url">module that provides a backend plugin</a> to proceed.', array('@url' => Url::fromUri('https://www.drupal.org/node/1254698')->toString())), 'error');
       $form = array();
     }
   }
@@ -190,7 +191,7 @@ class ServerForm extends EntityForm {
   /**
    * Builds the backend-specific configuration form.
    *
-   * @param \Drupal\search_api\Server\ServerInterface $server
+   * @param \Drupal\search_api\ServerInterface $server
    *   The server that is being created or edited.
    */
   public function buildBackendConfigForm(array &$form, FormStateInterface $form_state, ServerInterface $server) {
@@ -213,7 +214,7 @@ class ServerForm extends EntityForm {
         // Modify the backend plugin configuration container element.
         $form['backend_config']['#type'] = 'details';
         $form['backend_config']['#title'] = $this->t('Configure %plugin backend', array('%plugin' => $backend->label()));
-        $form['backend_config']['#description'] = String::checkPlain($backend->summary());
+        $form['backend_config']['#description'] = $backend->getDescription();
         $form['backend_config']['#open'] = TRUE;
         // Attach the backend plugin configuration form.
         $form['backend_config'] += $backend_form;
@@ -243,7 +244,7 @@ class ServerForm extends EntityForm {
   public function validate(array $form, FormStateInterface $form_state) {
     parent::validate($form, $form_state);
 
-    /** @var \Drupal\search_api\Server\ServerInterface $server */
+    /** @var \Drupal\search_api\ServerInterface $server */
     $server = $this->getEntity();
 
     // Check if the backend plugin changed.
@@ -272,7 +273,7 @@ class ServerForm extends EntityForm {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     parent::submitForm($form, $form_state);
 
-    /** @var \Drupal\search_api\Server\ServerInterface $server */
+    /** @var \Drupal\search_api\ServerInterface $server */
     $server = $this->getEntity();
 
     if ($backend_form_state = $form_state->get('backend_form_state')) {

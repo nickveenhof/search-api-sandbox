@@ -15,7 +15,7 @@ use Drupal\search_api\Plugin\IndexPluginInterface;
  *
  * A datasource is used to abstract the type of data that can be indexed and
  * searched with the Search API. Content entities are supported by default (with
- * the \Drupal\search_api\Plugin\SearchApi\Datasource\ContentEntityDatasource
+ * the \Drupal\search_api\Plugin\search_api\datasource\ContentEntity
  * datasource), but others can be added by other modules. Datasources provide
  * all kinds of metadata for search items of their type, as well as loading and
  * viewing functionality.
@@ -49,7 +49,7 @@ interface DatasourceInterface extends IndexPluginInterface {
    * @param mixed $id
    *   The datasource-specific ID of the item.
    *
-   * @return \Drupal\Core\TypedData\ComplexDataInterface|NULL
+   * @return \Drupal\Core\TypedData\ComplexDataInterface|null
    *   The loaded item if it could be found, NULL otherwise.
    */
   public function load($id);
@@ -92,7 +92,7 @@ interface DatasourceInterface extends IndexPluginInterface {
    * Retrieves a URL at which the item can be viewed on the web.
    *
    * @param \Drupal\Core\TypedData\ComplexDataInterface $item
-   *   An item of this DataSource's type.
+   *   An item of this datasource's type.
    *
    * @return \Drupal\Core\Url|null
    *   Either an object representing the URL of the given item, or NULL if the

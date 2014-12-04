@@ -7,11 +7,12 @@
 
 namespace Drupal\search_api\Form;
 
+use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\search_api\Utility\Utility;
+use Drupal\search_api\Utility;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -22,7 +23,7 @@ class IndexFieldsForm extends EntityForm {
   /**
    * The index for which the fields are configured.
    *
-   * @var \Drupal\search_api\Index\IndexInterface
+   * @var \Drupal\search_api\IndexInterface
    */
   protected $entity;
 
@@ -90,7 +91,7 @@ class IndexFieldsForm extends EntityForm {
     $form['description']['#markup'] = $this->t('<p>The datatype of a field determines how it can be used for searching and filtering. The boost is used to give additional weight to certain fields, e.g. titles or tags.</p> <p>Whether detailed field types are supported depends on the type of server this index resides on In any case, fields of type "Fulltext" will always be fulltext-searchable.</p>');
     if ($index->hasValidServer()) {
       $form['description']['#markup'] .= '<p>' . $this->t('Check the <a href="@server-url">' . "server's</a> backend class description for details.",
-          array('@server-url' => _url($index->getServer()->urlInfo()->toString()))) . '</p>';
+          array('@server-url' => $index->getServer()->url('canonical'))) . '</p>';
     }
 
     if ($fields = $index->getFieldsByDatasource(NULL, FALSE)) {
@@ -151,7 +152,7 @@ class IndexFieldsForm extends EntityForm {
 
     foreach ($fields as $key => $field) {
       $build['fields'][$key]['title']['#markup'] = String::checkPlain($field->getLabel());
-      $build['fields'][$key]['machine_name']['#markup'] = String::checkPlain($key);
+      $build['fields'][$key]['id']['#markup'] = String::checkPlain($key);
       if ($field->getDescription()) {
         $build['fields'][$key]['description'] = array(
           '#type' => 'value',
@@ -162,7 +163,7 @@ class IndexFieldsForm extends EntityForm {
         '#type' => 'checkbox',
         '#default_value' => $field->isIndexed(),
       );
-      $css_key = '#edit-fields-' . drupal_clean_css_identifier($key);
+      $css_key = '#edit-fields-' . Html::cleanCssIdentifier($key);
       $build['fields'][$key]['type'] = array(
         '#type' => 'select',
         '#options' => $types,
@@ -224,7 +225,7 @@ class IndexFieldsForm extends EntityForm {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    /** @var \Drupal\search_api\Index\IndexInterface $index */
+    /** @var \Drupal\search_api\IndexInterface $index */
     $index = $form_state->get('index');
 
     // Store the fields configuration.

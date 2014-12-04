@@ -7,11 +7,13 @@
 
 namespace Drupal\search_api\Tests\Processor;
 
-use Drupal\search_api\Utility\Utility;
+use Drupal\search_api\Entity\Index;
+use Drupal\search_api\Entity\Server;
+use Drupal\search_api\Utility;
 use Drupal\system\Tests\Entity\EntityUnitTestBase;
 
 /**
- * Search API Processor tests base class.
+ * Provides a base class for Drupal unit tests for processors.
  */
 abstract class ProcessorTestBase extends EntityUnitTestBase {
 
@@ -32,14 +34,14 @@ abstract class ProcessorTestBase extends EntityUnitTestBase {
   /**
    * The search index used for this test.
    *
-   * @var \Drupal\search_api\Index\IndexInterface
+   * @var \Drupal\search_api\IndexInterface
    */
   protected $index;
 
   /**
    * The search server used for this test.
    *
-   * @var \Drupal\search_api\Server\ServerInterface
+   * @var \Drupal\search_api\ServerInterface
    */
   protected $server;
 
@@ -57,12 +59,11 @@ abstract class ProcessorTestBase extends EntityUnitTestBase {
     parent::setUp();
 
     $this->installSchema('node', array('node_access'));
-    $this->installEntitySchema('comment');
     $this->installSchema('search_api', array('search_api_item', 'search_api_task'));
 
     $server_name = $this->randomMachineName();
-    $this->server = entity_create('search_api_server', array(
-      'machine_name' => strtolower($server_name),
+    $this->server = Server::create(array(
+      'id' => strtolower($server_name),
       'name' => $server_name,
       'status' => TRUE,
       'backend' => 'search_api_db',
@@ -74,29 +75,29 @@ abstract class ProcessorTestBase extends EntityUnitTestBase {
     $this->server->save();
 
     $index_name = $this->randomMachineName();
-    $this->index = entity_create('search_api_index', array(
-      'machine_name' => strtolower($index_name),
+    $this->index = Index::create(array(
+      'id' => strtolower($index_name),
       'name' => $index_name,
       'status' => TRUE,
       'datasources' => array('entity:comment', 'entity:node'),
       'server' => $server_name,
-      'tracker' => 'default_tracker',
+      'tracker' => 'default',
     ));
     $this->index->setServer($this->server);
     $this->index->setOption('fields', array(
-      'entity:comment|subject' => array(
+      'entity:comment/subject' => array(
         'type' => 'text',
       ),
-      'entity:comment|status' => array(
+      'entity:comment/status' => array(
         'type' => 'boolean',
       ),
-      'entity:node|title' => array(
+      'entity:node/title' => array(
         'type' => 'text',
       ),
-      'entity:node|author' => array(
+      'entity:node/author' => array(
         'type' => 'integer',
       ),
-      'entity:node|status' => array(
+      'entity:node/status' => array(
         'type' => 'boolean',
       ),
     ));

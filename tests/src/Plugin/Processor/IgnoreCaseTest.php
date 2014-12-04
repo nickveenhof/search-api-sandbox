@@ -7,7 +7,7 @@
 
 namespace Drupal\Tests\search_api\Plugin\Processor;
 
-use Drupal\search_api\Plugin\SearchApi\Processor\IgnoreCase;
+use Drupal\search_api\Plugin\search_api\processor\IgnoreCase;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -15,29 +15,33 @@ use Drupal\Tests\UnitTestCase;
  *
  * @group search_api
  *
- * @see \Drupal\search_api\Plugin\SearchApi\Processor\IgnoreCase
+ * @see \Drupal\search_api\Plugin\search_api\processor\IgnoreCase
  */
 class IgnoreCaseTest extends UnitTestCase {
 
   use ProcessorTestTrait;
 
   /**
-   * {@inheritdoc}
+   * Creates a new processor object for use in the tests.
    */
   protected function setUp() {
     parent::setUp();
-
     $this->processor = new IgnoreCase(array(), 'string', array());
   }
 
   /**
    * Tests the process() method.
    *
+   * @param string $passed_value
+   *   The value that should be passed into process().
+   * @param string $expected_value
+   *   The expected processed value.
+   *
    * @dataProvider processDataProvider
    */
-  public function testProcess($passedString, $expectedValue) {
-    $this->invokeMethod('process', array(&$passedString));
-    $this->assertEquals($passedString, $expectedValue);
+  public function testProcess($passed_value, $expected_value) {
+    $this->invokeMethod('process', array(&$passed_value));
+    $this->assertEquals($passed_value, $expected_value);
   }
 
   /**

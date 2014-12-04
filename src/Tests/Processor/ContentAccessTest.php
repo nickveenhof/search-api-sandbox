@@ -11,8 +11,7 @@ use Drupal\comment\Entity\Comment;
 use Drupal\comment\Entity\CommentType;
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
-use Drupal\search_api\Index\IndexInterface;
-use Drupal\search_api\Utility\Utility;
+use Drupal\search_api\Utility;
 use Drupal\user\Entity\Role;
 use Drupal\user\Entity\User;
 
@@ -21,14 +20,14 @@ use Drupal\user\Entity\User;
  *
  * @group search_api
  *
- * @see \Drupal\search_api\Plugin\SearchApi\Processor\ContentAccess
+ * @see \Drupal\search_api\Plugin\search_api\processor\ContentAccess
  */
 class ContentAccessTest extends ProcessorTestBase {
 
   /**
    * Stores the processor to be tested.
    *
-   * @var \Drupal\search_api\Plugin\SearchApi\Processor\ContentAccess
+   * @var \Drupal\search_api\Plugin\search_api\processor\ContentAccess
    */
   protected $processor;
 
@@ -97,14 +96,14 @@ class ContentAccessTest extends ProcessorTestBase {
 
     $this->comments[] = $comment;
 
-    $this->nodes[1] = entity_create('node', array('status' => NODE_PUBLISHED, 'type' => 'page', 'title' => 'test title'));
+    $this->nodes[1] = Node::create(array('status' => NODE_PUBLISHED, 'type' => 'page', 'title' => 'test title'));
     $this->nodes[1]->save();
 
     $fields = $this->index->getOption('fields');
-    $fields['entity:node|search_api_node_grants'] = array(
+    $fields['entity:node/search_api_node_grants'] = array(
       'type' => 'string',
     );
-    $fields['entity:comment|search_api_node_grants'] = array(
+    $fields['entity:comment/search_api_node_grants'] = array(
       'type' => 'string',
     );
     $this->index->setOption('fields', $fields);
@@ -168,7 +167,7 @@ class ContentAccessTest extends ProcessorTestBase {
 
     $this->processor->preprocessIndexItems($items);
 
-    $field_id = 'entity:comment' . IndexInterface::DATASOURCE_ID_SEPARATOR . 'search_api_node_grants';
+    $field_id = Utility::createCombinedId('entity:comment', 'search_api_node_grants');
     foreach ($items as $item) {
       $this->assertEqual($item->getField($field_id)->getValues(), array('node_access__all'));
     }
@@ -191,7 +190,7 @@ class ContentAccessTest extends ProcessorTestBase {
 
     $this->processor->preprocessIndexItems($items);
 
-    $field_id = 'entity:comment' . IndexInterface::DATASOURCE_ID_SEPARATOR . 'search_api_node_grants';
+    $field_id = Utility::createCombinedId('entity:comment', 'search_api_node_grants');
     foreach ($items as $item) {
       $this->assertEqual($item->getField($field_id)->getValues(), array('node_access_search_api_test:0'));
     }

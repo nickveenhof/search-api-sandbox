@@ -7,9 +7,9 @@
 
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\search_api\Exception\SearchApiException;
-use Drupal\search_api\Plugin\SearchApi\Datasource\ContentEntityDatasource;
-use Drupal\search_api\Utility\Utility;
+use Drupal\search_api\SearchApiException;
+use Drupal\search_api\Plugin\search_api\datasource\ContentEntity;
+use Drupal\search_api\Utility;
 
 /**
  * Implements hook_help().
@@ -17,8 +17,9 @@ use Drupal\search_api\Utility\Utility;
 function search_api_help($route_name) {
   switch ($route_name) {
     case 'search_api.overview':
-      return t('Below is a list of indexes grouped by the server they are associated with. A server is the definition of the actual indexing, querying and storage engine (e.g., an Apache Solr server, the database, …). An index is defines the indexed content (e.g., all content and all comments on "Article" posts).');
+      return t('Below is a list of indexes grouped by the server they are associated with. A server is the definition of the actual indexing, querying and storage engine (e.g., an Apache Solr server, the database, …). An index defines the indexed content (e.g., all content and all comments on "Article" posts).');
   }
+  return NULL;
 }
 
 /**
@@ -38,7 +39,7 @@ function search_api_cron() {
     'status' => TRUE,
     'read_only' => FALSE,
   );
-  /** @var \Drupal\search_api\Index\IndexInterface[] $indexes */
+  /** @var \Drupal\search_api\IndexInterface[] $indexes */
   $indexes = entity_load_multiple_by_properties('search_api_index', $conditions);
   if (!$indexes) {
     return;
@@ -105,7 +106,7 @@ function search_api_cron() {
 function search_api_entity_insert(EntityInterface $entity) {
   // Check if the entity is a content entity.
   if ($entity instanceof ContentEntityInterface) {
-    $indexes = ContentEntityDatasource::getIndexesForEntity($entity);
+    $indexes = ContentEntity::getIndexesForEntity($entity);
     if (!$indexes) {
       return;
     }
@@ -133,48 +134,49 @@ function search_api_entity_insert(EntityInterface $entity) {
  */
 function search_api_entity_update(EntityInterface $entity) {
   // Check if the entity is a content entity.
-  if ($entity instanceof ContentEntityInterface) {
-    $indexes = ContentEntityDatasource::getIndexesForEntity($entity);
-    if (!$indexes) {
-      return;
-    }
+  if (!($entity instanceof ContentEntityInterface)) {
+    return;
+  }
+  $indexes = ContentEntity::getIndexesForEntity($entity);
+  if (!$indexes) {
+    return;
+  }
 
-    // Compare old and new languages for the entity to identify inserted,
-    // updated and deleted translations (and, therefore, search items).
-    $entity_id = $entity->id();
-    $combine_id = function($langcode) use ($entity_id) {
-      return $entity_id . ':' . $langcode;
-    };
-    $inserted_item_ids = array();
-    $updated_item_ids = array_keys($entity->getTranslationLanguages());
-    $deleted_item_ids = array();
-    $old_translations = array_keys($entity->original->getTranslationLanguages());
-    foreach ($old_translations as $langcode) {
-      if (!in_array($langcode, $updated_item_ids)) {
-        $deleted_item_ids[] = $langcode;
-      }
+  // Compare old and new languages for the entity to identify inserted,
+  // updated and deleted translations (and, therefore, search items).
+  $entity_id = $entity->id();
+  $inserted_item_ids = array();
+  $updated_item_ids = $entity->getTranslationLanguages();
+  $deleted_item_ids = array();
+  $old_translations = $entity->original->getTranslationLanguages();
+  foreach ($old_translations as $langcode => $language) {
+    if (!isset($updated_item_ids[$langcode])) {
+      $deleted_item_ids[] = $langcode;
     }
-    foreach ($updated_item_ids as $i => $langcode) {
-      if (!in_array($langcode, $old_translations)) {
-        unset($updated_item_ids[$i]);
-        $inserted_item_ids[] = $langcode;
-      }
+  }
+  foreach ($updated_item_ids as $langcode => $language) {
+    if (!isset($old_translations[$langcode])) {
+      unset($updated_item_ids[$langcode]);
+      $inserted_item_ids[] = $langcode;
     }
+  }
 
-    $datasource_id = 'entity:' . $entity->getEntityTypeId();
-    $inserted_item_ids = array_map($combine_id, $inserted_item_ids);
-    $updated_item_ids = array_map($combine_id, $updated_item_ids);
-    $deleted_item_ids = array_map($combine_id, $deleted_item_ids);
-    foreach ($indexes as $index) {
-      if ($inserted_item_ids) {
-        $index->trackItemsInserted($datasource_id, $inserted_item_ids);
-      }
-      if ($updated_item_ids) {
-        $index->trackItemsUpdated($datasource_id, $updated_item_ids);
-      }
-      if ($deleted_item_ids) {
-        $index->trackItemsDeleted($datasource_id, $deleted_item_ids);
-      }
+  $datasource_id = 'entity:' . $entity->getEntityTypeId();
+  $combine_id = function ($langcode) use ($entity_id) {
+    return $entity_id . ':' . $langcode;
+  };
+  $inserted_item_ids = array_map($combine_id, $inserted_item_ids);
+  $updated_item_ids = array_map($combine_id, array_keys($updated_item_ids));
+  $deleted_item_ids = array_map($combine_id, $deleted_item_ids);
+  foreach ($indexes as $index) {
+    if ($inserted_item_ids) {
+      $index->trackItemsInserted($datasource_id, $inserted_item_ids);
+    }
+    if ($updated_item_ids) {
+      $index->trackItemsUpdated($datasource_id, $updated_item_ids);
+    }
+    if ($deleted_item_ids) {
+      $index->trackItemsDeleted($datasource_id, $deleted_item_ids);
     }
   }
 }
@@ -188,7 +190,7 @@ function search_api_entity_update(EntityInterface $entity) {
 function search_api_entity_delete(EntityInterface $entity) {
   // Check if the entity is a content entity.
   if ($entity instanceof ContentEntityInterface) {
-    $indexes = ContentEntityDatasource::getIndexesForEntity($entity);
+    $indexes = ContentEntity::getIndexesForEntity($entity);
     if (!$indexes) {
       return;
     }
