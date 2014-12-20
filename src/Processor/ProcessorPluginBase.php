@@ -46,8 +46,8 @@ abstract class ProcessorPluginBase extends IndexPluginBase implements ProcessorI
     ProcessorInterface::STAGE_PREPROCESS_QUERY => array(
       'label' => 'Preprocess query',
     ),
-    ProcessorInterface::STAGE_POSTPROCESS => array(
-      'label' => 'Postprocess'
+    ProcessorInterface::STAGE_POSTPROCESS_QUERY => array(
+      'label' => 'Postprocess query'
     ),
   );
 

@@ -23,7 +23,7 @@ use Drupal\search_api\Utility;
  *   label = @Translation("Highlight"),
  *   description = @Translation("Adds a highlighted excerpt to results and highlights returned fields."),
  *   stages = {
- *     "postprocess" = 0
+ *     "postprocess_query" = 0
  *   }
  * )
  */

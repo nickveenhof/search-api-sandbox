@@ -37,7 +37,7 @@ interface ProcessorInterface extends IndexPluginInterface {
   /**
    * Process stage: postprocess.
    */
-  const STAGE_POSTPROCESS = 'postprocess';
+  const STAGE_POSTPROCESS_QUERY = 'postprocess_query';
 
   /**
    * Checks whether this processor is applicable for a certain index.
@@ -63,7 +63,7 @@ interface ProcessorInterface extends IndexPluginInterface {
    * @param string $stage_identifier
    *   The stage to check: self::STAGE_PREPROCESS_INDEX,
    *   self::STAGE_PREPROCESS_QUERY
-   *   or self::STAGE_POSTPROCESS.
+   *   or self::STAGE_POSTPROCESS_QUERY.
    *
    * @return bool
    *   TRUE if the processor runs on a particular stage; FALSE otherwise.

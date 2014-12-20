@@ -20,7 +20,7 @@ use Drupal\search_api\Utility;
  *   description = @Translation("Allows you to define stopwords which will be ignored in searches. <strong>Caution:</strong> Only use after both 'Ignore case' and 'Tokenizer' have run."),
  *   stages = {
  *     "preprocess_query" = -5,
- *     "postprocess" = 5
+ *     "postprocess_query" = 5
  *   }
  * )
  */
