@@ -64,9 +64,9 @@ abstract class ProcessorPluginBase extends IndexPluginBase implements ProcessorI
   /**
    * {@inheritdoc}
    */
-  public function defaultWeight($stage) {
+  public function getDefaultWeight($stage) {
     $plugin_definition = $this->getPluginDefinition();
-    return $plugin_definition['stages'][$stage];
+    return isset($plugin_definition['stages'][$stage]) ? (int) $plugin_definition['stages'][$stage] : 0;
   }
 
   /**

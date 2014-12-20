@@ -77,7 +77,7 @@ class IndexFiltersForm extends EntityForm {
    */
   public function form(array $form, FormStateInterface $form_state) {
     // Retrieve lists of all processors, and the stages and weights they have.
-    $all_processors = $this->entity->getProcessors(TRUE);
+    $all_processors = $this->entity->getProcessors(FALSE);
     ksort($all_processors);
     $stages = $this->processorPluginManager->getProcessingStages();
     $processors_by_stage = array();
@@ -152,7 +152,7 @@ class IndexFiltersForm extends EntityForm {
           '#title_display' => 'invisible',
           '#default_value' => isset($processors_settings[$name][$stage]['weight'])
             ? $processors_settings[$name][$stage]['weight']
-            : $processor->defaultWeight($stage),
+            : $processor->getDefaultWeight($stage),
           '#parents' => array('processors', $name, $stage, 'weight'),
           '#attributes' => array('class' => array(
             'search-api-processor-weight-' . Html::cleanCssIdentifier($stage),
@@ -224,7 +224,7 @@ class IndexFiltersForm extends EntityForm {
     foreach ($form_state->get('processors') as $processor_id => $processor) {
       $processor_form = array();
       if (isset($form['settings'][$processor_id])) {
-        $processor_form = & $form['settings'][$processor_id];
+        $processor_form = &$form['settings'][$processor_id];
       }
       $default_settings = array(
         'settings' => array(),

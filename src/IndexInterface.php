@@ -245,15 +245,15 @@ interface IndexInterface extends ConfigEntityInterface {
   /**
    * Loads this index's processors.
    *
-   * @param bool $all
-   *   (optional) If TRUE, also include disabled processors. Otherwise, only
+   * @param bool $only_enabled
+   *   (optional) If FALSE, also include disabled processors. Otherwise, only
    *   load enabled ones.
    *
    * @return \Drupal\search_api\Processor\ProcessorInterface[]
-   *   An array of all enabled (or available, if $all is TRUE) processors for
-   *   this index.
+   *   An array of all enabled (or available, if $only_enabled is FALSE)
+   *   processors for this index.
    */
-  public function getProcessors($all = FALSE);
+  public function getProcessors($only_enabled = TRUE);
 
   /**
    * Loads this index's processors for a specific stage.
@@ -261,15 +261,16 @@ interface IndexInterface extends ConfigEntityInterface {
    * @param string $stage
    *   The stage for which to return the processors. One of the
    *   \Drupal\search_api\Processor\ProcessorInterface::STAGE_* constants.
-   * @param bool $all
-   *   (optional) If TRUE, also include disabled processors. Otherwise, only
+   * @param bool $only_enabled
+   *   (optional) If FALSE, also include disabled processors. Otherwise, only
    *   load enabled ones.
    *
    * @return \Drupal\search_api\Processor\ProcessorInterface[]
-   *   An array of all enabled (or available, if $all is TRUE) processors that
-   *   support the given stage, ordered by the weight for that stage.
+   *   An array of all enabled (or available, if if $only_enabled is FALSE)
+   *   processors that support the given stage, ordered by the weight for that
+   *   stage.
    */
-  public function getProcessorsByStage($stage, $all = FALSE);
+  public function getProcessorsByStage($stage, $only_enabled = TRUE);
 
   /**
    * Preprocesses data items for indexing.
