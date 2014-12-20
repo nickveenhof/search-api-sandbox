@@ -79,8 +79,9 @@ class IndexFiltersForm extends EntityForm {
     // Retrieve lists of all processors, and the stages and weights they have.
     $all_processors = $this->entity->getProcessors(TRUE);
     ksort($all_processors);
+    $stages = $this->processorPluginManager->getProcessingStages();
     $processors_by_stage = array();
-    foreach (ProcessorPluginBase::$stages as $stage => $definition) {
+    foreach ($stages as $stage => $definition) {
       $processors_by_stage[$stage] = $this->entity->getProcessorsByStage($stage, TRUE);
     }
 
@@ -120,7 +121,7 @@ class IndexFiltersForm extends EntityForm {
       '#title' => t('Processor order'),
     );
     // Order enabled processors per stage.
-    foreach (ProcessorPluginBase::$stages as $stage => $description) {
+    foreach ($stages as $stage => $description) {
       $form['weight'][$stage] = array (
         '#type' => 'fieldset',
         '#title' => $description['label'],

@@ -38,4 +38,30 @@ class ProcessorPluginManager extends DefaultPluginManager {
     $this->alterInfo('search_api_processor_info');
   }
 
+  /**
+   * Retrieves information about the available processing stages.
+   *
+   * These are then used by processors in their "stages" definition to specify
+   * in which stages they will run.
+   *
+   * @return array
+   *   An associative array mapping stage identifiers to information about that
+   *   stage. The information itself is an associative array with the following
+   *   keys:
+   *   - label: The untranslated label for this stage.
+   */
+  public function getProcessingStages() {
+    return array(
+      ProcessorInterface::STAGE_PREPROCESS_INDEX => array(
+        'label' => 'Preprocess index',
+      ),
+      ProcessorInterface::STAGE_PREPROCESS_QUERY => array(
+        'label' => 'Preprocess query',
+      ),
+      ProcessorInterface::STAGE_POSTPROCESS_QUERY => array(
+        'label' => 'Postprocess query'
+      ),
+    );
+  }
+
 }

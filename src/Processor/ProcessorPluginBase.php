@@ -36,21 +36,6 @@ use Drupal\search_api\Query\ResultSetInterface;
  */
 abstract class ProcessorPluginBase extends IndexPluginBase implements ProcessorInterface {
 
-  // @todo translate labels here?
-  // @todo Change to a static method, and probably also on the manager not the
-  //   plugin base class.
-  public static $stages = array(
-    ProcessorInterface::STAGE_PREPROCESS_INDEX => array(
-      'label' => 'Preprocess index',
-    ),
-    ProcessorInterface::STAGE_PREPROCESS_QUERY => array(
-      'label' => 'Preprocess query',
-    ),
-    ProcessorInterface::STAGE_POSTPROCESS_QUERY => array(
-      'label' => 'Postprocess query'
-    ),
-  );
-
   /**
    * {@inheritdoc}
    */
