@@ -7,6 +7,7 @@
 
 namespace Drupal\search_api\Form;
 
+use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\String;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityManagerInterface;
@@ -110,7 +111,7 @@ class IndexFiltersForm extends EntityForm {
         '#parents' => array('processors', $name, 'status'),
         '#description' => $processor->getDescription(),
         '#attributes' => array('class' => array(
-          'search-api-processor-status-' . $name,
+          'search-api-processor-status-' . Html::cleanCssIdentifier($name),
         )),
       );
     }
@@ -126,7 +127,7 @@ class IndexFiltersForm extends EntityForm {
         '#title' => $description['label'],
         '#attributes' => array('class' => array(
           'search-api-stage-wrapper',
-          'search-api-stage-wrapper-' . $stage
+          'search-api-stage-wrapper-' . Html::cleanCssIdentifier($stage),
         )),
       );
       $form['weight'][$stage]['order'] = array(
@@ -135,7 +136,7 @@ class IndexFiltersForm extends EntityForm {
       $form['weight'][$stage]['order']['#tabledrag'][] = array(
         'action' => 'order',
         'relationship' => 'sibling',
-        'group' => 'search-api-processor-weight-' . $stage,
+        'group' => 'search-api-processor-weight-' . Html::cleanCssIdentifier($stage),
       );
     }
     foreach ($processors_by_stage as $stage => $processors) {
@@ -154,8 +155,8 @@ class IndexFiltersForm extends EntityForm {
             : $processor->defaultWeight($stage),
           '#parents' => array('processors', $name, $stage, 'weight'),
           '#attributes' => array('class' => array(
-            'search-api-processor-weight-' . $stage,
-            'search-api-processor-weight-' . $name,
+            'search-api-processor-weight-' . Html::cleanCssIdentifier($stage),
+            'search-api-processor-weight-' . Html::cleanCssIdentifier($name),
           )),
         );
       }
@@ -178,7 +179,7 @@ class IndexFiltersForm extends EntityForm {
           '#group' => 'processor_settings',
           '#parents' => array('processors', $name, 'settings'),
           '#attributes' => array('class' => array(
-            'search-api-processor-settings-' . $name,
+            'search-api-processor-settings-' . Html::cleanCssIdentifier($name),
           )),
         );
         $form['settings'][$name] += $settings_form;
