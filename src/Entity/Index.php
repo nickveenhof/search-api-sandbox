@@ -873,7 +873,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
   public function getPropertyDefinitions($datasource_id, $alter = TRUE) {
     $alter = $alter ? 1 : 0;
     if (!isset($this->properties[$datasource_id][$alter])) {
-      if ($datasource_id) {
+      if (isset($datasource_id)) {
         $datasource = $this->getDatasource($datasource_id);
         $this->properties[$datasource_id][$alter] = $datasource->getPropertyDefinitions();
       }
@@ -1100,6 +1100,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
   public function reindex() {
     if ($this->status()) {
       $this->getTracker()->trackAllItemsUpdated();
+      \Drupal::moduleHandler()->invokeAll('search_api_index_reindex', array($this, FALSE));
     }
   }
 
@@ -1112,6 +1113,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
       if (!$this->isReadOnly()) {
         $this->getServer()->deleteAllIndexItems($this);
       }
+      \Drupal::moduleHandler()->invokeAll('search_api_index_reindex', array($this, !$this->isReadOnly()));
     }
   }
 
