@@ -10,6 +10,8 @@ namespace Drupal\search_api\Processor;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\StringTranslation\TranslationInterface;
 
 /**
  * Manages processor plugins.
@@ -21,6 +23,8 @@ use Drupal\Core\Plugin\DefaultPluginManager;
  */
 class ProcessorPluginManager extends DefaultPluginManager {
 
+  use StringTranslationTrait;
+
   /**
    * Constructs a ProcessorPluginManager object.
    *
@@ -31,11 +35,14 @@ class ProcessorPluginManager extends DefaultPluginManager {
    *   Cache backend instance to use.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler.
+   * @param \Drupal\Core\StringTranslation\TranslationInterface $translation
+   *   The string translation manager.
    */
-  public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler) {
+  public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler, TranslationInterface $translation) {
     parent::__construct('Plugin/search_api/processor', $namespaces, $module_handler, 'Drupal\search_api\Processor\ProcessorInterface', 'Drupal\search_api\Annotation\SearchApiProcessor');
     $this->setCacheBackend($cache_backend, 'search_api_processors');
     $this->alterInfo('search_api_processor_info');
+    $this->setStringTranslation($translation);
   }
 
   /**
@@ -48,18 +55,18 @@ class ProcessorPluginManager extends DefaultPluginManager {
    *   An associative array mapping stage identifiers to information about that
    *   stage. The information itself is an associative array with the following
    *   keys:
-   *   - label: The untranslated label for this stage.
+   *   - label: The translated label for this stage.
    */
   public function getProcessingStages() {
     return array(
       ProcessorInterface::STAGE_PREPROCESS_INDEX => array(
-        'label' => 'Preprocess index',
+        'label' => $this->t('Preprocess index'),
       ),
       ProcessorInterface::STAGE_PREPROCESS_QUERY => array(
-        'label' => 'Preprocess query',
+        'label' => $this->t('Preprocess query'),
       ),
       ProcessorInterface::STAGE_POSTPROCESS_QUERY => array(
-        'label' => 'Postprocess query'
+        'label' => $this->t('Postprocess query'),
       ),
     );
   }
