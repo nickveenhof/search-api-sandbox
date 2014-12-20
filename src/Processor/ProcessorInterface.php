@@ -21,6 +21,11 @@ use Drupal\search_api\Query\ResultSetInterface;
  * the other method(s) should simply be left blank. A processor should make it
  * clear in its description or documentation when it will run and what effect it
  * will have.
+ *
+ * @see \Drupal\search_api\Annotation\SearchApiProcessor
+ * @see \Drupal\search_api\Processor\ProcessorPluginManager
+ * @see \Drupal\search_api\Processor\ProcessorPluginBase
+ * @see plugin_api
  */
 interface ProcessorInterface extends IndexPluginInterface {
 
