@@ -20,7 +20,7 @@ use Drupal\search_api\Processor\ProcessorPluginBase;
  *   label = @Translation("Language"),
  *   description = @Translation("Adds the item language to indexed items."),
  *   stages = {
- *     "preprocess_index" = 0
+ *     "preprocess_index" = -50
  *   }
  * )
  */
