@@ -664,8 +664,8 @@ class Index extends ConfigEntityBase implements IndexInterface {
     // All field identifiers should start with the datasource ID.
     if (!$prefix && $datasource_id) {
       $prefix = $datasource_id . self::DATASOURCE_ID_SEPARATOR;
-      $label_prefix = $datasource_id ? $this->getDatasource($datasource_id)->label() . ' » ' : '';
     }
+    $datasource_label = $datasource_id ? $this->getDatasource($datasource_id)->label() . ' » ' : '';
 
     // Loop over all properties and handle them accordingly.
     $recurse = array();
@@ -760,7 +760,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
       $field = Utility::createField($this, $key);
       $field->setType($field_type);
       $field->setLabel($label);
-      $field->setLabelPrefix($label_prefix);
+      $field->setLabelPrefix($datasource_label);
       $field->setDescription($description);
       $field->setIndexed(FALSE);
       $this->fields[0]['fields'][$key] = $field;
