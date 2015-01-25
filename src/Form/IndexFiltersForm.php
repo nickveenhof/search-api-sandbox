@@ -149,7 +149,11 @@ class IndexFiltersForm extends EntityForm {
     foreach ($processors_by_stage as $stage => $processors) {
       /** @var \Drupal\search_api\Processor\ProcessorInterface $processor */
       foreach ($processors as $processor_id => $processor) {
+        $weight = isset($processor_settings[$processor_id]['weights'][$stage])
+          ? $processor_settings[$processor_id]['weights'][$stage]
+          : $processor->getDefaultWeight($stage);
         $form['weights'][$stage]['order'][$processor_id]['#attributes']['class'][] = 'draggable';
+        $form['weights'][$stage]['order'][$processor_id]['#weight'] = $weight;
         $form['weights'][$stage]['order'][$processor_id]['label'] = array(
           '#markup' => String::checkPlain($processor->label()),
         );
@@ -157,9 +161,7 @@ class IndexFiltersForm extends EntityForm {
           '#type' => 'weight',
           '#title' => $this->t('Weight for processor %title', array('%title' => $processor->label())),
           '#title_display' => 'invisible',
-          '#default_value' => isset($processor_settings[$processor_id]['weights'][$stage])
-            ? $processor_settings[$processor_id]['weights'][$stage]
-            : $processor->getDefaultWeight($stage),
+          '#default_value' => $weight,
           '#parents' => array('processors', $processor_id, 'weights', $stage),
           '#attributes' => array('class' => array(
             'search-api-processor-weight-' . Html::cleanCssIdentifier($stage),

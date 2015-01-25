@@ -470,11 +470,11 @@ class Index extends ConfigEntityBase implements IndexInterface {
     // enabled) along with their effective weights (user-set or default).
     foreach ($processors as $name => $processor) {
       if ($processor->supportsStage($stage) && !($only_enabled && empty($processor_settings[$name]['status']))) {
-        if (!empty($processor_settings[$name][$stage]['weight'])) {
-          $processor_weights[$name] = $processor_settings[$name][$stage]['weight'];
+        if (!empty($processor_settings[$name]['weights'][$stage])) {
+          $processor_weights[$name] = $processor_settings[$name]['weights'][$stage];
         }
         else {
-          $processor_weights[$name] = $processors[$name]->getDefaultWeight($stage);
+          $processor_weights[$name] = $processor->getDefaultWeight($stage);
         }
       }
     }
