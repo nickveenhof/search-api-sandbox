@@ -112,14 +112,18 @@ class IndexFiltersForm extends EntityForm {
       )),
     );
     foreach ($all_processors as $processor_id => $processor) {
+      $clean_css_id = Html::cleanCssIdentifier($processor_id);
       $form['status'][$processor_id] = array(
         '#type' => 'checkbox',
         '#title' => $processor->label(),
         '#default_value' => !empty($processor_settings[$processor_id]),
         '#description' => $processor->getDescription(),
-        '#attributes' => array('class' => array(
-          'search-api-processor-status-' . Html::cleanCssIdentifier($processor_id),
-        )),
+        '#attributes' => array(
+          'class' => array(
+            'search-api-processor-status-' . $clean_css_id,
+          ),
+          'data-id' => $clean_css_id,
+        ),
       );
     }
 
@@ -153,6 +157,7 @@ class IndexFiltersForm extends EntityForm {
           ? $processor_settings[$processor_id]['weights'][$stage]
           : $processor->getDefaultWeight($stage);
         $form['weights'][$stage]['order'][$processor_id]['#attributes']['class'][] = 'draggable';
+        $form['weights'][$stage]['order'][$processor_id]['#attributes']['class'][] = 'search-api-processor-weight--' . Html::cleanCssIdentifier($processor_id);
         $form['weights'][$stage]['order'][$processor_id]['#weight'] = $weight;
         $form['weights'][$stage]['order'][$processor_id]['label'] = array(
           '#markup' => String::checkPlain($processor->label()),
@@ -165,7 +170,6 @@ class IndexFiltersForm extends EntityForm {
           '#parents' => array('processors', $processor_id, 'weights', $stage),
           '#attributes' => array('class' => array(
             'search-api-processor-weight-' . Html::cleanCssIdentifier($stage),
-            'search-api-processor-weight-' . Html::cleanCssIdentifier($processor_id),
           )),
         );
       }
