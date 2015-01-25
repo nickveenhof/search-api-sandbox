@@ -177,10 +177,9 @@ class IndexFiltersForm extends EntityForm {
       '#type' => 'vertical_tabs',
     );
 
-    $processor_form_states = array();
     foreach ($all_processors as $processor_id => $processor) {
-      $processor_form_states[$processor_id] = new SubFormState($form_state, array('processors', $processor_id, 'settings'));
-      $processor_form = $processor->buildConfigurationForm($form, $processor_form_states[$processor_id]);
+      $processor_form_state = new SubFormState($form_state, array('processors', $processor_id, 'settings'));
+      $processor_form = $processor->buildConfigurationForm($form, $processor_form_state);
       if ($processor_form) {
         $form['settings'][$processor_id] = array(
           '#type' => 'details',
@@ -193,15 +192,7 @@ class IndexFiltersForm extends EntityForm {
         );
         $form['settings'][$processor_id] += $processor_form;
       }
-      else {
-        // We don't need a form state for processors without settings form from
-        // here on. We will also use this to determine which processors have
-        // forms and which can be skipped for validation/submission.
-        unset($processor_form_states[$processor_id]);
-      }
     }
-
-    $form_state->set('processor_form_states', $processor_form_states);
 
     return $form;
   }
@@ -214,8 +205,10 @@ class IndexFiltersForm extends EntityForm {
     /** @var \Drupal\search_api\Processor\ProcessorInterface[] $processors */
     $processors = $form_state->get('processors');
 
-    foreach ($form_state->get('processor_form_states') as $processor_id => $processor_form_state) {
+    // Iterate over all processors that have a form and are enabled.
+    foreach ($form['settings'] as $processor_id => $processor_form) {
       if (!empty($values['status'][$processor_id])) {
+        $processor_form_state = new SubFormState($form_state, array('processors', $processor_id, 'settings'));
         $processors[$processor_id]->validateConfigurationForm($form['settings'][$processor_id], $processor_form_state);
       }
     }
@@ -226,7 +219,6 @@ class IndexFiltersForm extends EntityForm {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
-    $processor_form_states = $form_state->get('processor_form_states');
     $new_settings = array();
 
     // Store processor settings.
@@ -246,8 +238,9 @@ class IndexFiltersForm extends EntityForm {
       if (!empty($processor_values['weights'])) {
         $new_settings[$processor_id]['weights'] = $processor_values['weights'];
       }
-      if (isset($processor_form_states[$processor_id])) {
-        $processor->submitConfigurationForm($form['settings'][$processor_id], $processor_form_states[$processor_id]);
+      if (isset($form['settings'][$processor_id])) {
+        $processor_form_state = new SubFormState($form_state, array('processors', $processor_id, 'settings'));
+        $processor->submitConfigurationForm($form['settings'][$processor_id], $processor_form_state);
         $new_settings[$processor_id]['settings'] = $processor->getConfiguration();
       }
     }

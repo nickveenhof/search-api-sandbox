@@ -1331,4 +1331,23 @@ class Index extends ConfigEntityBase implements IndexInterface {
     $this->resetCaches(FALSE);
   }
 
+  /**
+   * Implements the magic __sleep() method.
+   *
+   * Prevents the cached plugins and fields from being serialized.
+   */
+  public function __sleep() {
+    $properties = get_object_vars($this);
+    unset($properties['datasourcePlugins']);
+    unset($properties['trackerPlugin']);
+    unset($properties['serverInstance']);
+    unset($properties['fields']);
+    unset($properties['datasourceFields']);
+    unset($properties['fulltextFields']);
+    unset($properties['processors']);
+    unset($properties['properties']);
+    unset($properties['datasourceAdditionalFields']);
+    return array_keys($properties);
+  }
+
 }
