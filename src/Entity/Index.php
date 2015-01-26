@@ -445,14 +445,11 @@ class Index extends ConfigEntityBase implements IndexInterface {
   public function getProcessors($only_enabled = TRUE) {
     $processors = $this->loadProcessors();
 
-    // Filter processors by status if required.
+    // Filter processors by status if required. Enabled processors are those
+    // which have settings in the "processors" option.
     if ($only_enabled) {
       $processors_settings = $this->getOption('processors', array());
-      foreach ($processors as $name => $processor) {
-        if (empty($processors_settings[$name]['status'])) {
-          unset($processors[$name]);
-        }
-      }
+      $processors = array_intersect_key($processors, $processors_settings);
     }
 
     return $processors;
