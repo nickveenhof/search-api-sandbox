@@ -129,7 +129,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
    *
    * @var string
    */
-  protected $tracker;
+  protected $tracker = 'default';
 
   /**
    * The tracker plugin configuration.

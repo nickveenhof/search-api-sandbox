@@ -218,6 +218,8 @@ class IndexFiltersForm extends EntityForm {
         $processors[$processor_id]->validateConfigurationForm($form['settings'][$processor_id], $processor_form_state);
       }
     }
+
+    $form_state->set('processors', $processors);
   }
 
   /**
