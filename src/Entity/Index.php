@@ -56,6 +56,8 @@ use Drupal\search_api\Utility;
  *     "canonical" = "/admin/config/search/search-api/index/{search_api_index}",
  *     "add-form" = "/admin/config/search/search-api/add-index",
  *     "edit-form" = "/admin/config/search/search-api/index/{search_api_index}/edit",
+ *     "fields" = "/admin/config/search/search-api/index/{search_api_index}/fields",
+ *     "filters" = "/admin/config/search/search-api/index/{search_api_index}/filters",
  *     "delete-form" = "/admin/config/search/search-api/index/{search_api_index}/delete",
  *     "disable" = "/admin/config/search/search-api/index/{search_api_index}/disable",
  *     "enable" = "/admin/config/search/search-api/index/{search_api_index}/enable",
@@ -466,7 +468,7 @@ class Index extends ConfigEntityBase implements IndexInterface {
     // Get a list of all processors meeting the criteria (stage and, optionally,
     // enabled) along with their effective weights (user-set or default).
     foreach ($processors as $name => $processor) {
-      if ($processor->supportsStage($stage) && !($only_enabled && empty($processor_settings[$name]['status']))) {
+      if ($processor->supportsStage($stage) && !($only_enabled && empty($processor_settings[$name]))) {
         if (!empty($processor_settings[$name]['weights'][$stage])) {
           $processor_weights[$name] = $processor_settings[$name]['weights'][$stage];
         }

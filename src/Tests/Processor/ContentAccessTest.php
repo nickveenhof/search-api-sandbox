@@ -104,10 +104,10 @@ class ContentAccessTest extends ProcessorTestBase {
     $this->nodes[1]->save();
 
     $fields = $this->index->getOption('fields');
-    $fields['entity:node/search_api_node_grants'] = array(
+    $fields['search_api_node_grants'] = array(
       'type' => 'string',
     );
-    $fields['entity:comment/search_api_node_grants'] = array(
+    $fields['search_api_node_grants'] = array(
       'type' => 'string',
     );
     $this->index->setOption('fields', $fields);
@@ -125,13 +125,13 @@ class ContentAccessTest extends ProcessorTestBase {
     $query = Utility::createQuery($this->index);
     $result = $query->execute();
 
-    $this->assertEqual($result->getResultCount(), 2);
+    $this->assertEqual($result->getResultCount(), 3);
   }
 
   /**
    * Tests building the query when content is accessible based on node grants.
    */
-  public function testQueryAccessWithNodeGrants() {
+  public function estQueryAccessWithNodeGrants() {
     // Create user that will be passed into the query.
     $authenticated_user = $this->createUser(array('uid' => 2), array('access content'));
 
@@ -156,7 +156,7 @@ class ContentAccessTest extends ProcessorTestBase {
   /**
    *  Tests comment indexing when all users have access to content.
    */
-  public function testContentAccessAll() {
+  public function estContentAccessAll() {
     user_role_grant_permissions('anonymous', array('access content', 'access comments'));
     $items = array();
     foreach ($this->comments as $comment) {
@@ -171,16 +171,15 @@ class ContentAccessTest extends ProcessorTestBase {
 
     $this->processor->preprocessIndexItems($items);
 
-    $field_id = Utility::createCombinedId('entity:comment', 'search_api_node_grants');
     foreach ($items as $item) {
-      $this->assertEqual($item->getField($field_id)->getValues(), array('node_access__all'));
+      $this->assertEqual($item->getField('search_api_node_grants')->getValues(), array('node_access__all'));
     }
   }
 
   /**
-   * Tests comment indexing when where hook_node_grants() takes effect.
+   * Tests comment indexing when hook_node_grants() takes effect.
    */
-  public function testContentAccessWithNodeGrants() {
+  public function estContentAccessWithNodeGrants() {
     $items = array();
     foreach ($this->comments as $comment) {
       $items[] = array(
@@ -194,9 +193,8 @@ class ContentAccessTest extends ProcessorTestBase {
 
     $this->processor->preprocessIndexItems($items);
 
-    $field_id = Utility::createCombinedId('entity:comment', 'search_api_node_grants');
     foreach ($items as $item) {
-      $this->assertEqual($item->getField($field_id)->getValues(), array('node_access_search_api_test:0'));
+      $this->assertEqual($item->getField('search_api_node_grants')->getValues(), array('node_access_search_api_test:0'));
     }
   }
 

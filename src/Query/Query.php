@@ -439,7 +439,9 @@ class Query implements QueryInterface {
       }
       $ret .= 'Sorting: ' . implode(', ', $sorts) . "\n";
     }
-    $ret .= 'Options: ' . str_replace("\n", "\n  ", var_export($this->options, TRUE)) . "\n";
+    // @todo Fix for entities contained in options (which might kill
+    //    var_export() due to circular references).
+    #$ret .= 'Options: ' . str_replace("\n", "\n  ", var_export($this->options, TRUE)) . "\n";
     return $ret;
   }
 

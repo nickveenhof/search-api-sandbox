@@ -60,7 +60,7 @@ search_api.index.*:
                   type: integer
                   label: 'The processor''s weight for this stage'
               settings:
-                type: search_api.processor.plugin.[%parent.processorPluginId]
+                type: search_api.processor.plugin.[%parent.processor_id]
     datasources:
       type: sequence
       label: 'Datasource plugin IDs'
