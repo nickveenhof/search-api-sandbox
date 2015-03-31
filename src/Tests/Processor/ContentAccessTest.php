@@ -103,6 +103,8 @@ class ContentAccessTest extends ProcessorTestBase {
     $this->nodes[1] = Node::create(array('status' => NODE_PUBLISHED, 'type' => 'page', 'title' => 'test title'));
     $this->nodes[1]->save();
 
+    // Also index users, to verify that they are unaffected by the processor.
+    $this->index->set('datasources', array('entity:comment', 'entity:node', 'entity:user'));
     $fields = $this->index->getOption('fields');
     $fields['search_api_node_grants'] = array(
       'type' => 'string',
@@ -125,7 +127,7 @@ class ContentAccessTest extends ProcessorTestBase {
     $query = Utility::createQuery($this->index);
     $result = $query->execute();
 
-    $this->assertEqual($result->getResultCount(), 3);
+    $this->assertEqual($result->getResultCount(), 4);
   }
 
   /**
@@ -150,7 +152,7 @@ class ContentAccessTest extends ProcessorTestBase {
     $query->setOption('search_api_access_account', $authenticated_user);
     $result = $query->execute();
 
-    $this->assertEqual($result->getResultCount(), 1);
+    $this->assertEqual($result->getResultCount(), 3);
   }
 
   /**
